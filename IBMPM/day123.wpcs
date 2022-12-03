@@ -1,0 +1,166 @@
+//
+// InfoSphere MDM Collaboration Server Script
+//
+
+
+function day1() {
+    var hmCaloriesPerElf = [];
+    var iCalories = 0;
+    var iMostCalories = 0;
+    var sLine;
+    forEachLine(in, sLine) {
+        if (sLine == "") {
+            // Start next elf
+            hmCaloriesPerElf.add(iCalories);
+            if (iCalories > iMostCalories) {
+                iMostCalories = iCalories;
+            }
+            iCalories = 0;
+        } else {
+            iCalories = iCalories + toInteger(sLine);
+        }
+    }
+    //out.writeln(hmCaloriesPerElf);
+    out.writeln(iMostCalories);
+    hmCaloriesPerElf = hmCaloriesPerElf.sort();
+    var iSum = 0;
+    for (var i=0; i<3; i++) {
+        var iCal = hmCaloriesPerElf[hmCaloriesPerElf.size() - i -1];
+        out.writeln(iCal);
+        iSum = iSum + iCal;
+    }
+    out.writeln(iSum);
+}
+
+function day2() {
+    var iTotal = 0;
+    var sLine;
+    forEachLine(in, sLine) {
+        if (sLine == "") { continue; }
+        var sPlayer1 = sLine.parseDelim(" ", 0).replace("A", "Rock").replace("B","Paper").replace("C","Scissors");
+        var sOutcome = sLine.parseDelim(" ", 1).replace("X", "Loose").replace("Y","Draw").replace("Z","Win");
+        // Determine who wins
+        // A for Rock, B for Paper, and C for Scissors
+        // X for Rock, Y for Paper, and Z for Scissors
+        var sPlayer2 = sPlayer1; // Assume draw
+        if (sOutcome == "Loose") { // Play to loose
+            if (sPlayer1 == "Rock") { // Rock
+                sPlayer2 = "Scissors"; // Scissor
+            }
+            else if (sPlayer1 == "Paper") { // Paper
+                sPlayer2 = "Rock"; // Rock
+            }
+            else if (sPlayer1 == "Scissors") { // Scissors
+                sPlayer2 = "Paper"; // Paper
+            }
+        }
+        else if (sOutcome == "Win") { // Play to win
+            if (sPlayer1 == "Rock") { // Rock
+                sPlayer2 = "Paper"; // Paper
+            }
+            else if (sPlayer1 == "Paper") { // Paper
+                sPlayer2 = "Scissors"; // Scissors
+            }
+            else if (sPlayer1 == "Scissors") { // Scissors
+                sPlayer2 = "Rock"; // Rock
+            }
+        }
+
+        var iScore = 3;
+        if (sPlayer2 == "Rock") {  // Rock
+            if (sPlayer1 == "Paper") { iScore = 0; } // Paper wins: I loose
+            else if (sPlayer1 == "Scissors") { iScore = 6; } // Scissors looses: I win
+            iScore = iScore + 1;
+        }
+        else if (sPlayer2 == "Paper") { // Paper
+            if (sPlayer1 == "Scissors") { iScore = 0; }    // Scissor wins
+            else if (sPlayer1 == "Rock") { iScore = 6; } // Rock looses
+            iScore = iScore + 2;
+        }
+        else if (sPlayer2 == "Scissors") { // Scissors
+            if (sPlayer1 == "Rock") { iScore = 0; }    // Rock looses
+            else if (sPlayer1 == "Paper") { iScore = 6; } // Paper looses
+            iScore = iScore + 3;
+        }
+        out.writeln(sPlayer1  + " " + sOutcome + " --> " + sPlayer2 + " ="+ iScore);
+        iTotal = iTotal + iScore;
+    }
+    out.writeln(iTotal);
+}
+
+var sChars = "abcdefghijklmnopqrstuvwxyz";
+var iChars = sChars.length();
+var hmChars = [];
+for (var j=0; j<iChars; j++) {
+    hmChars[sChars.substring(j, j+1)] = j;
+}
+function getPrio(c) {
+    var iPrio = hmChars[c];
+    if (iPrio == null) {
+        iPrio = hmChars[toLowerCase(c)] + 26;
+    }
+    return iPrio + 1;   // Offset 1
+}
+function getCommonElement(sLine1, sLine2) {
+    var iLen = sLine1.length();
+    for (var i=0; i<iLen; i++) {
+        var c = sLine1.substring(i, i+1);
+        if (sLine2.contains(c)) {
+            // Common, find out prio
+            return c;
+        }
+    }
+    return null;
+}
+function getCommonElement3(sLine1, sLine2, sLine3) {
+    var iLen = sLine1.length();
+    for (var i=0; i<iLen; i++) {
+        var c = sLine1.substring(i, i+1);
+        if (sLine2.contains(c) && sLine3.contains(c)) {
+            // Common, find out prio
+            return c;
+        }
+    }
+    return null;
+}
+
+function day3() {
+    var iTotal = 0;
+    var sLine;
+    forEachLine(in, sLine) {
+        if (sLine == "") { continue; }
+        var iLen = sLine.length() / 2;
+        var sComp1 = sLine.substring(0, iLen);
+        var sComp2 = sLine.substring(iLen);
+        // Find common element
+        var c = getCommonElement(sComp1, sComp2);
+        var iPrio = getPrio(c);
+        out.writeln(sComp1 + " | "+ sComp2 + " C=" + c + " Prio = " + iPrio);
+        iTotal = iTotal + iPrio;
+    }
+    out.writeln(iTotal);
+}
+
+function day3b() {
+    var iTotal = 0;
+    while (true) {
+        var sLine1 = in.nextLine();
+        var sLine2 = in.nextLine();
+        var sLine3 = in.nextLine();
+        if (sLine1 == null || sLine2 == null || sLine3 == null) { break; }
+        // Find common element in all three lines
+        var c = getCommonElement3(sLine1, sLine2, sLine3);
+        var iPrio = getPrio(c);
+        out.writeln("Common=" + c + " Prio = " + iPrio);
+        iTotal = iTotal + iPrio;
+    }
+    out.writeln(iTotal);
+}
+
+
+//day1();
+//day2();
+//day3();
+//day3b();
+
+day3b();
