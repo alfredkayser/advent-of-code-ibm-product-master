@@ -158,9 +158,74 @@ function day3b() {
 }
 
 
+function day4_readStacks() {
+    var hmStacks = [];
+    var hmLines = [];
+    var sLine;
+    forEachLine(in, sLine) {
+        if (sLine == "") { break; }
+        hmLines.add(sLine);
+    }
+    var iHeight = hmLines.size() - 1;
+    var hmParts = hmLines[iHeight].parseDelim(" ");
+    var iStacks = 0;
+    for (var i=0; i<hmParts.size(); i++) {
+        var sStack = hmParts[i].checkString("");
+        if (sStack != "") {
+            iStacks++;
+        }
+    }
+    for (var j=0; j<iStacks; j++) {
+        hmStacks[j] = "";
+    }
+    for (var i=0; i<iHeight; i++) {
+        var sLine = hmLines[i];
+        // Get the stack info
+        var iLen = sLine.length();
+        for (var j=0; j<iStacks; j++) {
+            var iPos = j*4 + 1;
+            if (iPos < iLen) {
+                var sCrate = sLine.substring(iPos, iPos + 1).checkString("");
+                if (sCrate != "") {
+                    hmStacks[j] = hmStacks[j] + sCrate;
+                }
+            }
+        }
+    }
+    // Last line contains stack numbers
+    out.writeln("hmStacks=" + hmStacks);
+    return hmStacks;
+}
+
+function day4_processCommands(hmStacks, b9001) {
+    var sLine;
+    forEachLine(in, sLine) {
+        var iCount = toInteger(sLine.parseDelim(" ", 1));
+        var iFrom = toInteger(sLine.parseDelim(" ", 3)) - 1;
+        var iTo = toInteger(sLine.parseDelim(" ", 5)) - 1;
+        // Execute action
+        if (b9001) {
+            hmStacks[iTo] = hmStacks[iFrom].substring(0,iCount) + hmStacks[iTo];
+            hmStacks[iFrom] = hmStacks[iFrom].substring(iCount);
+        } else {
+            for (var i=0; i<iCount; i++) {
+                hmStacks[iTo] = hmStacks[iFrom].substring(0,1) + hmStacks[iTo];
+                hmStacks[iFrom] = hmStacks[iFrom].substring(1);
+            }
+        }
+        out.writeln("hmStacks=" + hmStacks);
+    }
+    out.write("Message = ");
+    for (var i=0; i<hmStacks.size(); i++) {
+        out.write(hmStacks[i].substring(0,1));
+    }
+    out.writeln("");
+}
+
 //day1();
 //day2();
 //day3();
 //day3b();
 
-day3b();
+//day4();
+day4_processCommands(day4_readStacks(), true);
