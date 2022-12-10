@@ -25,8 +25,6 @@ out.writeln(iMostCalories);
 hmCaloriesPerElf = hmCaloriesPerElf.sort();
 var iSum = 0;
 for (var i=0; i<3; i++) {
-    var iCal = hmCaloriesPerElf[hmCaloriesPerElf.size() - i -1];
-    out.writeln(iCal);
-    iSum = iSum + iCal;
+    iSum = iSum + hmCaloriesPerElf[hmCaloriesPerElf.size() - i -1];
 }
 out.writeln(iSum);
