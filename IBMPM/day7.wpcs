@@ -21,48 +21,42 @@ function addSize(hmDirSize, hmPaths, iLevel, iSize) {
     }
 }
 
-function day6() {
-    var sLine;
-    var hmPaths = [];
-    var iLevel = 0;
-    var hmDirSize = [];
-    forEachLine(in, sLine) {
-        var hmParts = sLine.parseDelim(" ");
-        if (hmParts[0] == "$") {
-            if (hmParts[1] == "cd") {
-                if (hmParts[2] == "..") {
-                    iLevel --;
-                } else if (hmParts[2] == "/") {
-                    iLevel = 0;
-                } else {
-                    hmPaths[iLevel] = hmParts[2];
-                    iLevel++;
-                }
-            }
-        } else if (hmParts[0] != "dir") {
-            addSize(hmDirSize, hmPaths, iLevel, hmParts[0].checkInt(0));
+var sLine;
+var hmPaths = [];
+var iLevel = 0;
+var hmDirSize = [];
+forEachLine(in, sLine) {
+    if (sLine.startsWith("$ cd")) {
+        if (sLine == "$ cd ..") {
+            iLevel --;
+        } else if (sLine == "$ cd /") {
+            iLevel = 0;
+        } else {
+            hmPaths[iLevel] = sLine.parseDelim(" ", 2);
+            iLevel++;
         }
+    } else if ("0123456789".contains(sLine.substring(0,1))) {
+        addSize(hmDirSize, hmPaths, iLevel, sLine.parseDelim(" ",0).checkInt(0));
     }
-    var iTotal = 0;
-    var iDisk = 70000000;
-    var iNeed = 30000000;
-    var iTotalUsed = hmDirSize[""];
-    var sPathToDelete = "";
-    var iDeleteSize = 999999999;
-    var iLeft = iDisk - iTotalUsed;
-    out.writeln("Used: " + iTotalUsed);
-    out.writeln("Free: " + iLeft);
-    var sPath;
-    var iSize;
-    forEachHmElement(hmDirSize, sPath, iSize) {
-        if (iSize <= 100000) {
-            iTotal = iTotal + iSize;
-        }
-        if (iSize >= iNeed - iLeft && iSize < iDeleteSize) {
-            sPathToDelete = sPath;
-            iDeleteSize = iSize;
-        }
-    }
-    out.writeln(iTotal);
-    out.writeln("Dir to delete: " + sPathToDelete + " : " + iDeleteSize);
 }
+var iTotalUsed = hmDirSize[""];
+out.writeln("Used: " + iTotalUsed);
+
+var iCountSmallDirSize = 0;
+var iDisk = 70000000;
+var iNeed = 30000000;
+var sPathToDelete = "";
+var iDeleteSize = 999999999;
+var sPath;
+var iSize;
+forEachHmElement(hmDirSize, sPath, iSize) {
+    if (iSize <= 100000) {
+        iCountSmallDirSize = iCountSmallDirSize + iSize;
+    }
+    if (iSize >= iNeed - (iDisk - iTotalUsed) && iSize < iDeleteSize) {
+        sPathToDelete = sPath;
+        iDeleteSize = iSize;
+    }
+}
+out.writeln("Space used by small directories: " + iCountSmallDirSize);
+out.writeln("Dir to delete: " + sPathToDelete + " : " + iDeleteSize);
