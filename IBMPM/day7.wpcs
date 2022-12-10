@@ -1,0 +1,68 @@
+//
+// Code of Advent 2022
+//
+
+//--- Day 7: No Space Left On Device ---
+
+function getPath(hmPaths, iLevel) {
+    var sPath = "";
+    for (var i=0; i<iLevel; i++) {
+        sPath = sPath + "/" + hmPaths[i];
+    }
+    return sPath;
+}
+
+function addSize(hmDirSize, hmPaths, iLevel, iSize) {
+    // Add to all levels
+    for (var i=0; i<=iLevel; i++) {
+        var sPath = getPath(hmPaths, i);
+        var iDirSize = hmDirSize[sPath];
+        hmDirSize[sPath] = (iDirSize == null ? iSize : iDirSize + iSize);
+    }
+}
+
+function day6() {
+    var sLine;
+    var hmPaths = [];
+    var iLevel = 0;
+    var hmDirSize = [];
+    forEachLine(in, sLine) {
+        var hmParts = sLine.parseDelim(" ");
+        if (hmParts[0] == "$") {
+            if (hmParts[1] == "cd") {
+                if (hmParts[2] == "..") {
+                    iLevel --;
+                } else if (hmParts[2] == "/") {
+                    iLevel = 0;
+                } else {
+                    hmPaths[iLevel] = hmParts[2];
+                    iLevel++;
+                }
+            }
+        } else if (hmParts[0] != "dir") {
+            addSize(hmDirSize, hmPaths, iLevel, hmParts[0].checkInt(0));
+        }
+    }
+    var iTotal = 0;
+    var iDisk = 70000000;
+    var iNeed = 30000000;
+    var iTotalUsed = hmDirSize[""];
+    var sPathToDelete = "";
+    var iDeleteSize = 999999999;
+    var iLeft = iDisk - iTotalUsed;
+    out.writeln("Used: " + iTotalUsed);
+    out.writeln("Free: " + iLeft);
+    var sPath;
+    var iSize;
+    forEachHmElement(hmDirSize, sPath, iSize) {
+        if (iSize <= 100000) {
+            iTotal = iTotal + iSize;
+        }
+        if (iSize >= iNeed - iLeft && iSize < iDeleteSize) {
+            sPathToDelete = sPath;
+            iDeleteSize = iSize;
+        }
+    }
+    out.writeln(iTotal);
+    out.writeln("Dir to delete: " + sPathToDelete + " : " + iDeleteSize);
+}

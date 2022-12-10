@@ -1,0 +1,77 @@
+//
+// Code of Advent 2022
+//
+
+//--- Day 3: Rucksack Reorganization ---
+
+var sChars = "abcdefghijklmnopqrstuvwxyz";
+var iChars = sChars.length();
+var hmChars = [];
+for (var j=0; j<iChars; j++) {
+    hmChars[sChars.substring(j, j+1)] = j;
+}
+function getPrio(c) {
+    var iPrio = hmChars[c];
+    if (iPrio == null) {
+        iPrio = hmChars[toLowerCase(c)] + 26;
+    }
+    return iPrio + 1;   // Offset 1
+}
+function getCommonElement(sLine1, sLine2) {
+    var iLen = sLine1.length();
+    for (var i=0; i<iLen; i++) {
+        var c = sLine1.substring(i, i+1);
+        if (sLine2.contains(c)) {
+            // Common, find out prio
+            return c;
+        }
+    }
+    return null;
+}
+function getCommonElement3(sLine1, sLine2, sLine3) {
+    var iLen = sLine1.length();
+    for (var i=0; i<iLen; i++) {
+        var c = sLine1.substring(i, i+1);
+        if (sLine2.contains(c) && sLine3.contains(c)) {
+            // Common, find out prio
+            return c;
+        }
+    }
+    return null;
+}
+
+function day4() {
+    var iTotal = 0;
+    var sLine;
+    forEachLine(in, sLine) {
+        if (sLine == "") { continue; }
+        var iLen = sLine.length() / 2;
+        var sComp1 = sLine.substring(0, iLen);
+        var sComp2 = sLine.substring(iLen);
+        // Find common element
+        var c = getCommonElement(sComp1, sComp2);
+        var iPrio = getPrio(c);
+        out.writeln(sComp1 + " | "+ sComp2 + " C=" + c + " Prio = " + iPrio);
+        iTotal = iTotal + iPrio;
+    }
+    out.writeln(iTotal);
+}
+
+function day4b() {
+    var iTotal = 0;
+    while (true) {
+        var sLine1 = in.nextLine();
+        var sLine2 = in.nextLine();
+        var sLine3 = in.nextLine();
+        if (sLine1 == null || sLine2 == null || sLine3 == null) { break; }
+        // Find common element in all three lines
+        var c = getCommonElement3(sLine1, sLine2, sLine3);
+        var iPrio = getPrio(c);
+        out.writeln("Common=" + c + " Prio = " + iPrio);
+        iTotal = iTotal + iPrio;
+    }
+    out.writeln(iTotal);
+}
+
+day4();
+day4b();

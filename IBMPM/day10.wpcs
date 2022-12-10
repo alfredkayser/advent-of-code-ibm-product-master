@@ -1,0 +1,34 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 10: Cathode-Ray Tube ---
+
+var iSprite   = 1;
+var iCycle    = 1;
+var iDelta    = 0;
+var iCol      = 0;
+var iCheckSum = 0;
+while (true) {
+    out.write((iSprite -1 <= iCol && iCol <= iSprite + 1 ? "#" : "."));
+    if (iCol++ == 40) {
+        out.writeln("");
+        iCol = 0;
+    }
+    iCycle++;
+    if (iCycle == 20 || iCycle == 60 || iCycle == 100 || iCycle == 140 || iCycle == 180 || iCycle == 220) {
+        iCheckSum = iCheckSum + iCycle * iSprite;
+    }
+    if (iDelta == 0) {
+        var sOp = nextLine(in);
+        if (sOp == null) { break; }
+        if (sOp.startsWith("addx")) {
+            iDelta = sOp.substring("addx ".length()).checkInt(0);
+        }
+    } else {
+        iSprite = iSprite + iDelta;
+        iDelta = 0;
+    }
+}
+out.writeln("");
+out.writeln(iCheckSum);

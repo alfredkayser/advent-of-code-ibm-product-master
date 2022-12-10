@@ -1,0 +1,80 @@
+//
+// Code of Advent 2022
+//
+
+//--- Day 8: Treetop Tree House ---
+
+function isTreeVisible(hmTrees, iRow, iCol) {
+    // See if are trees blocking this tree in this row
+    var hmRow = hmTrees[iRow];
+    var iColumns = hmRow.size();
+    var sTree = hmRow[iCol];
+    var iHideCount = 0;
+    for (var i=0; i<iCol; i++) {
+        if (hmRow[i] >= sTree) { iHideCount++; break; }
+    }
+    for (var i=iCol+1; i<iColumns; i++) {
+        if (hmRow[i] >= sTree) { iHideCount++; break; }
+    }
+    for (var i=0; i<iRow; i++) {
+        if (hmTrees[i][iCol] >= sTree) { iHideCount++; break; }
+    }
+    for (var i=iRow+1; i<hmTrees.size(); i++) {
+        if (hmTrees[i][iCol] >= sTree) { iHideCount++; break; }
+    }
+    return (iHideCount == 4 ? 0 : 1);
+}
+
+function treeViewingScore(hmTrees, iRow, iCol) {
+    var hmRow = hmTrees[iRow];
+    var iColumns = hmRow.size();
+    var sTree = hmRow[iCol];
+    var iViewWest  = 0;
+    var iViewEast  = 0;
+    var iViewNorth = 0;
+    var iViewSouth = 0;
+    for (var i=iCol-1; i>=0; i--) {
+        iViewWest ++;
+        if (hmRow[i] >= sTree) { break; }
+    }
+    for (var i=iCol+1; i<iColumns; i++) {
+        iViewEast ++;
+        if (hmRow[i] >= sTree) { break; }
+    }
+    for (var i=iRow-1; i>=0; i--) {
+        iViewNorth ++;
+        if (hmTrees[i][iCol] >= sTree) { break; }
+    }
+    for (var i=iRow+1; i<hmTrees.size(); i++) {
+        iViewSouth ++;
+        if (hmTrees[i][iCol] >= sTree) { break; }
+    }
+    out.writeln(sTree + ": "+ iViewEast + " * " + iViewNorth + " * " + iViewWest + " * " + iViewSouth);
+    return iViewSouth * iViewNorth * iViewWest * iViewEast;
+}
+
+var sLine;
+var hmTrees = [];
+forEachLine(in, sLine) {
+    var iLen = sLine.length();
+    var hmRow = [];
+    for (var i=0; i<iLen; i++) {
+        hmRow.add(sLine.substring(i,i+1));
+    }
+    hmTrees.add(hmRow);
+}
+var iVisible = 0;
+var iBestView = 0;
+for (var iRow=0; iRow<hmTrees.size(); iRow++) {
+    var hmRow = hmTrees[iRow];
+    out.writeln(hmRow);
+    for (var iCol=0; iCol<hmRow.size(); iCol++) {
+        iVisible = iVisible + hmTrees.isTreeVisible(iRow, iCol);
+        var iScore = hmTrees.treeViewingScore(iRow, iCol);
+        if (iScore > iBestView) {
+            iBestView = iScore;
+        }
+    }
+}
+out.writeln(iVisible);
+out.writeln(iBestView);

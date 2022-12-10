@@ -1,0 +1,29 @@
+//
+// Code of Advent 2022
+//
+
+//--- Day 6: Tuning Trouble ---
+
+function day5_findMarker(sLine, iMarkerLen) {
+    var iLen = sLine.length();
+    for (var i=0; i<iLen - iMarkerLen; i++) {
+        var sMarker = "";
+        for (var j=0; j<iMarkerLen; j++) {
+            var c = sLine.substring(i+j, i+j+1);
+            if (sMarker.contains(c)) {
+                break;  // Duplicate found, abort
+            }
+            sMarker = sMarker + c;
+        }
+        if (sMarker.length() == iMarkerLen) {
+            return i + iMarkerLen;
+        }
+    }
+    return -1;
+}
+
+var sLine;
+forEachLine(in, sLine) {
+    out.writeln("Marker: " + sLine.day5_findMarker(4));
+    out.writeln("Start of message: " + sLine.day5_findMarker(14));
+}

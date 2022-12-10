@@ -1,0 +1,32 @@
+//
+// Code of Advent 2022
+//
+
+//--- Day 1: Calorie Counting ---
+
+var hmCaloriesPerElf = [];
+var iCalories = 0;
+var iMostCalories = 0;
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine == "") {
+        // Start next elf
+        hmCaloriesPerElf.add(iCalories);
+        if (iCalories > iMostCalories) {
+            iMostCalories = iCalories;
+        }
+        iCalories = 0;
+    } else {
+        iCalories = iCalories + toInteger(sLine);
+    }
+}
+out.writeln(iMostCalories);
+
+hmCaloriesPerElf = hmCaloriesPerElf.sort();
+var iSum = 0;
+for (var i=0; i<3; i++) {
+    var iCal = hmCaloriesPerElf[hmCaloriesPerElf.size() - i -1];
+    out.writeln(iCal);
+    iSum = iSum + iCal;
+}
+out.writeln(iSum);

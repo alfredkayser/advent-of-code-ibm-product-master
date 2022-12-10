@@ -1,0 +1,29 @@
+//
+// Code of Advent 2022
+//
+
+//--- Day 4: Camp Cleanup ---
+
+var iOverlapping = 0;
+var iContaining = 0;
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine == "") { continue; }
+    var hmNumbers = sLine.replace("-",",").parseDelim(",");
+    var iRange1Start = toInteger(hmNumbers[0]);
+    var iRange1End   = toInteger(hmNumbers[1]);
+    var iRange2Start = toInteger(hmNumbers[2]);
+    var iRange2End   = toInteger(hmNumbers[3]);
+    // In how many assignment pairs does one range fully contain the other?
+    if ((iRange1Start <= iRange2Start && iRange2End <= iRange1End)
+     || (iRange2Start <= iRange1Start && iRange1End <= iRange2End)) {
+        iContaining ++;
+    }
+    // In how many assignment pairs do the ranges overlap?
+    // In other words count the lines where the ranges are not before or after the other
+    if (! (iRange1End < iRange2Start || iRange1Start > iRange2End)) {
+        iOverlapping ++;
+    }
+}
+out.writeln("iContaining: " + iContaining);
+out.writeln("Overlapping: " + iOverlapping);
