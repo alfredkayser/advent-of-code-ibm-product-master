@@ -18,7 +18,7 @@ function writeGrid(hmGrid, hmKnots, bPositions) {
         var hmRow = hmGrid[i];
         if (hmRow == null) { hmRow = []; }
         for (var j=-10; j<iMaxCols; j++) {
-            var sChar =  "."; 
+            var sChar =  ".";
             if (bPositions) {
                 sChar = hmRow[j].checkString(".");
             } else {
@@ -26,8 +26,7 @@ function writeGrid(hmGrid, hmKnots, bPositions) {
                     var iPosX = hmKnots[k][0];
                     var iPosY = hmKnots[k][1];
                     if (i == iPosY && j == iPosX) {
-                        sChar = toString(k);
-                        if (k == 0) { sChar = "H"; }
+                        sChar = (k == 0 ? "H" : toString(k));
                     }
                 }
             }
@@ -54,41 +53,42 @@ function moveKnot(hmLead, hmKnot) {
     hmKnot[1] = iPosTailY;
 }
 
-var sLine;
-var hmKnots = [];
-var iKnotCount = 10; // Excluding head
-for (var i=0; i<iKnotCount; i++) {
-    var hmKnot = [];
-    hmKnots.add(hmKnot);
-    hmKnot[0] = 0;
-    hmKnot[1] = 0;
-}
-var hmHead = hmKnots[0];
-var hmPositions = [];
-var hmGrid = [];
-forEachLine(in, sLine) {
-    out.writeln(" == "+ sLine + " == ");
-    var sCmd = sLine.substring(0,1);
-    var iCount = sLine.substring(2).checkInt(0);
-    for (var i=0; i<iCount; i++) {
-        // Move head
-        if (sCmd == "R") { hmHead[0] = hmHead[0] + 1; }
-        if (sCmd == "L") { hmHead[0] = hmHead[0] - 1; }
-        if (sCmd == "U") { hmHead[1] = hmHead[1] + 1; }
-        if (sCmd == "D") { hmHead[1] = hmHead[1] - 1; }
-        // Move tail knots to be close with head
-        // Move in Y direction: if two steps aways move one step closer
-        for (var j=1; j<iKnotCount; j++) {
-            moveKnot(hmKnots[j-1], hmKnots[j]);
-        }
-        var j= 9; // Only track the last knot...
+function countKnotPositions(iKnotCount) {
+    var sLine;
+    var hmKnots = [];
+    for (var i=0; i<iKnotCount; i++) {
+        var hmKnot = [];
+        hmKnot[0] = 0;
+        hmKnot[1] = 0;
+        hmKnots.add(hmKnot);
+    }
+    var hmHead = hmKnots[0];
+    var hmPositions = [];
+    var hmGrid = [];
+    forEachLine(in, sLine) {
+        var sCmd = sLine.substring(0,1);
+        var iCount = sLine.substring(2).checkInt(0);
+        for (var i=0; i<iCount; i++) {
+            // Move head
+            if (sCmd == "R") { hmHead[0] = hmHead[0] + 1; }
+            if (sCmd == "L") { hmHead[0] = hmHead[0] - 1; }
+            if (sCmd == "U") { hmHead[1] = hmHead[1] + 1; }
+            if (sCmd == "D") { hmHead[1] = hmHead[1] - 1; }
+            // Move tail knots to be close with head
+            for (var j=1; j<iKnotCount; j++) {
+                moveKnot(hmKnots[j-1], hmKnots[j]);
+            }
+            var j=iKnotCount-1; // Only track the last knot...
             var iPosTailX = hmKnots[j][0];
             var iPosTailY = hmKnots[j][1];
             var hmRow = hmGrid[iPosTailY];
             if (hmRow == null) { hmRow = []; hmGrid[iPosTailY] = hmRow; }
             hmRow[iPosTailX] = "#";
             hmPositions[iPosTailX + "," + iPosTailY] = true;
+        }
     }
+    writeGrid(hmGrid, hmKnots, true);
+    out.writeln(iKnotCount + " knots: Positions touched: " + hmPositions.size());
 }
-writeGrid(hmGrid, hmKnots, true);
-out.writeln(hmPositions.size());
+countKnotPositions(2);
+countKnotPositions(10);
