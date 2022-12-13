@@ -2,7 +2,10 @@
 // Code of Advent 2022
 //
 
-// --- Day 10: Cathode-Ray Tube ---
+// --- Day 11: Monkey in the Middle ---
+
+// Read monkeys
+
 
 var iSprite   = 1;
 var iCycle    = 1;
