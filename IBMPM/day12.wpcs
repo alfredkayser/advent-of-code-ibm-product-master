@@ -1,0 +1,137 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 12: Hill Climbing Algorithm ---
+
+function log(sMsg) {
+    out.writeln(sMsg);
+}
+
+var iColumns = 0;
+var iRows    = 0;
+var sChars   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890";
+
+var hmMap    = [];
+var hmSteps  = [];
+var hmQueue  = [];
+
+var iMaxLevel = 0;
+var iShortestRouteUp   = 999999999;
+var iShortestRouteDown = 999999999;
+
+var iTopCol = 0;
+var iTopRow = 0;
+var iStartCol = 0;
+var iStartRow = 0;
+
+function debug(sLine) {
+    out.writeln(sLine);
+}
+
+function drawMaps(hmMap, hmGrid) {
+    for (var row = 0; row < iRows; row++) {
+        var hmRowMap = hmMap[row];
+        var hmRowGrid = hmGrid[row];
+        if (hmRowMap == null) { hmRowMap = []; }
+        if (hmRowGrid == null) { hmRowGrid = []; }
+        for (var col = 0; col < iColumns; col++){
+            var i = hmRowMap[col];
+            out.write((i==null ? "." : (i==999999999 ? "#" : sChars.substring(i, i+1).checkString("."))));
+            var i = hmRowGrid[col];
+            out.write(i.checkString(".").resizeString(4," ",true));
+        }
+        out.writeln("");
+    }
+    out.writeln("-----------------------");
+}
+
+function readMap() {
+    var sLine;
+    forEachLine(in, sLine) {
+        var hmRow = [];
+        iColumns = sLine.length();
+        for (var i=0; i<iColumns; i++) {
+            var c = sLine.substring(i, i+1);
+            if (c == "E") {
+                iTopCol = i;
+                iTopRow = hmMap.size();
+                hmRow.add(999999999);
+            } else if (c == "S") {
+                iStartCol = i;
+                iStartRow = hmMap.size();
+                hmRow.add(0);
+            } else {
+                var iLevel = sChars.indexOf(c);
+                if (iLevel > iMaxLevel) {
+                    iMaxLevel = iLevel;
+                }
+                hmRow.add(iLevel);
+            }
+        }
+        hmMap.add(hmRow);
+    }
+    iRows = hmMap.size();
+    out.writeln("Size:  (" + iRows + "," + iColumns+ ")");
+    out.writeln("Top:   (" + iTopRow + "," + iTopCol + ")");
+    out.writeln("Start: (" + iStartRow + "," + iStartCol + ")");
+    out.writeln("MaxLevel = " + iMaxLevel);
+    hmMap[iTopRow][iTopCol] = iMaxLevel;    // E = z...
+}
+
+function addPixel(r, c, iDistance) {
+    // Visit this pixel and add queue of pixels to check
+    var hmPixel = [];
+    hmPixel.add(r);
+    hmPixel.add(c);
+    hmPixel.add(iDistance);
+    hmSteps[r][c] = iDistance;    // Store the distance for this pixel
+    hmQueue.add(hmPixel);
+}
+
+function addNeighbour(r, c, iLevel, iDistance) {
+    // pixel is not visited yet and is on this level or higher
+    // so take this pixel, and to list to be checked again
+    if (hmSteps[r][c] == null && hmMap[r][c] >= iLevel) {
+        // Reached this pixel, add to queue and visited
+        addPixel(r,c,iDistance);
+    }
+    return true;
+}
+
+function walkDown(r, c) {
+    for (var row = 0; row < iRows; row++) { hmSteps[row] = []; }
+    var iPos = 0;
+    addPixel(r, c, 0);
+    while (iPos < hmQueue.size() && hmQueue.size() < 10000) {
+        var hmPixel     = hmQueue[iPos];iPos++;
+        var r           = hmPixel[0];
+        var c           = hmPixel[1];
+        var iDistance   = hmPixel[2];
+        var iLevel      = hmMap[r][c];
+        if (iLevel == 0) {
+            if (iDistance < iShortestRouteDown) {
+                iShortestRouteDown = iDistance;
+            }
+            if (r == iStartRow && c == iStartCol) {
+                iShortestRouteUp = iDistance;
+            }
+        }
+        iLevel--;
+        iDistance++;
+        if (r+1<iRows)    { addNeighbour(r+1, c, iLevel, iDistance); }
+        if (c+1<iColumns) { addNeighbour(r, c+1, iLevel, iDistance); }
+        if (r>0)          { addNeighbour(r-1, c, iLevel, iDistance); }
+        if (c>0)          { addNeighbour(r, c-1, iLevel, iDistance); }
+    }
+    return true;
+}
+
+
+readMap();
+walkDown(iTopRow, iTopCol);
+
+log("What is the fewest steps required to move from your current position to the location that should get the best signal?");
+log("1. Steps = "+ iShortestRouteUp);
+log("What is the fewest steps required to move starting from any square with elevation a to the location that should get the best signal?");
+log("2. Steps = "+ iShortestRouteDown);
