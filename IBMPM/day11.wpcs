@@ -1,0 +1,139 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 11: Monkey in the Middle ---
+
+var iCount = 20;
+var bDivideBy3 = false;
+var hmMonkeys = [];
+
+function debug(sLine) {
+    out.writeln(sLine);
+}
+function remainder(iNumber, iDivider) {
+    var iDiv = toInteger( iNumber / iDivider );
+    if (iDiv == 0) { return iNumber; }
+    return toInteger(iNumber - (iDiv * iDivider));
+}
+
+// Read monkeys
+
+var hmMonkeyDef = [];
+hmMonkeyDef.i = "Starting items: ";
+hmMonkeyDef.o = "Operation: new = old ";
+hmMonkeyDef.d = "Test: divisible by ";
+hmMonkeyDef.t = "If true: throw to monkey ";
+hmMonkeyDef.f = "If false: throw to monkey ";
+
+var hmMonkey = null;
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine.startsWith("Monkey")) {
+        hmMonkey = [];
+        hmMonkey.s = 0;
+        hmMonkeys.add(hmMonkey);
+    }
+    else {
+        var sAttrib;
+        var sMatch;
+        forEachHmElement(hmMonkeyDef, sAttrib, sMatch) {
+            if (sLine.contains(sMatch)) {
+                var sValue = sLine.replace(sMatch, "").trim();
+                if (sAttrib == "o") {
+                    var hmParts = sValue.parseDelim(" ");
+                    hmMonkey.o = hmParts[0];
+                    hmMonkey.a = hmParts[1].checkInt(0);    // If 0, the value is "old"...
+                } else if (sAttrib == "i") {
+                    var hmValues = sValue.parseDelim(", ");
+                    for (var i=0; i<hmValues.size(); i++) {
+                        hmValues[i] = toInteger(hmValues[i]);
+                    }
+                    hmMonkey.i = hmValues;
+                } else {
+                    hmMonkey[sAttrib] = toInteger(sValue);
+                }
+                break;
+            }
+        }
+    }
+}
+
+debug(hmMonkeys);
+
+// Play the monkey game
+var iMonkeys = hmMonkeys.size();
+
+var iModulus = 1;
+var iTotalItems = 0;
+for (var j=0; j<iMonkeys; j++) {
+    iModulus = iModulus * hmMonkeys[j].d;
+    iTotalItems = iTotalItems + hmMonkeys[j].i.size();
+}
+out.writeln("iModulus="+iModulus);
+out.writeln("iTotalItems="+iTotalItems);
+
+var hmInspects = [];
+for (var i=1; i<=iCount; i++) {
+    for (var j=0; j<iMonkeys; j++) {
+        var hmMonkey =  hmMonkeys[j];
+        var iStart       = hmMonkey.s;
+        var hmItems      = hmMonkey.i;
+        var iEnd         = hmItems.size();
+        if (iStart == iEnd) { continue; }   // Empty
+        var sOperation   = hmMonkey.o;
+        var iArg         = hmMonkey.a;
+        var iMonkeyTrue  = hmMonkey.t;
+        var iMonkeyFalse = hmMonkey.f;
+        var iTest        = hmMonkey.d;
+        hmInspects[j]    = iEnd;
+        while (iStart < iEnd) {
+            var iWorryLevel = hmItems[iStart];iStart ++;
+            var iVal = (iArg == 0 ? iWorryLevel : iArg);
+            var iNewLevel = (sOperation == "+" ? iWorryLevel + iVal : iWorryLevel * iVal);
+            if (bDivideBy3) { iNewLevel = iNewLevel / 3; }
+            if (iNewLevel < 0) {
+                // Multiply generated overflow, use doubles
+                var nNewNumber = toDouble(iWorryLevel) * toDouble(iVal);
+                iNewLevel = remainder(nNewNumber, toDouble(iModulus));
+                hmMonkeys[(remainder(nNewNumber, toDouble(iTest)) == 0 ? iMonkeyTrue : iMonkeyFalse)].i.add(iNewLevel);
+            } else {
+                hmMonkeys[(remainder(iNewLevel, iTest) == 0 ? iMonkeyTrue : iMonkeyFalse)].i.add(iNewLevel);
+            }
+        }
+        hmMonkey.s = iStart;
+    }
+    if (i <= 20 || toString(i).endsWith("000")) { 
+	    out.writeln(" After Round "  + i);
+	    var iSum = 0;
+        for (var j=0; j<iMonkeys; j++) {
+            out.writeln("Monkey "+j+" inspected items "+hmInspects[j]+" times.");
+            iSum = iSum + hmInspects[j];
+        }
+        out.writeln("Sum=" + iSum);
+//	    for (var j=0; j<iMonkeys; j++) {
+//	        var hmMonkey = hmMonkeys[j];
+//	        var hmItems  = hmMonkey.i;
+//	        out.write("Monkey "+j+": ");
+//	        var iStart = hmMonkey.s;
+//	        var sLine = "";
+//	        var sDelim = "";
+//	        while (iStart < hmItems.size()) {
+//	            sLine = sLine + sDelim + hmItems[iStart];
+//	            iStart ++;
+//	            sDelim = ", ";
+//	        }
+//	        out.writeln(sLine);
+//	    }
+	    out.writeln("");
+    }
+}
+
+hmInspects = hmInspects.sort();
+out.writeln(hmInspects);
+out.writeln(hmInspects[iMonkeys-2] * hmInspects[iMonkeys-1]);
+var nNum1 = 1.0 * hmInspects[iMonkeys-2];
+var nNum2 = 1.0 * hmInspects[iMonkeys-1];
+out.writeln(nNum1 * nNum2);
+
+
