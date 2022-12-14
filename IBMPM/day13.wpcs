@@ -1,0 +1,135 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 13: Distress Signal ---
+
+function log(sMsg) {
+    //out.writeln(sMsg);
+}
+
+var jmClass = null;
+var jmClassName = null;
+
+function getObjectType(oValue) {
+    if (oValue == null) { return "NULL"; }
+    if (jmClass == null) {
+        jmClass = createJavaMethod("java.lang.Object","getClass");
+        jmClassName = createJavaMethod("java.lang.Class","getName");
+    }
+    return oValue.runJavaMethod(jmClass).runJavaMethod(jmClassName);
+}
+function isHashMap(oValue) {
+    return (getObjectType(oValue) == "java.util.HashMap");
+}
+function arrayToString(oValue, sDelim) {
+    if (!isHashMap(oValue)) { return toString(oValue); }
+    var sString = "";
+    for (var j=0; j<oValue.size(); j++) {
+        if (sString != "") { sString = sString + sDelim; }
+        sString = sString + oValue[j].arrayToString(sDelim);
+    }
+    return "[" + sString + "]";
+}
+
+function readPacket(sLine) {
+    var hmStack     = [];   // Stack of lists
+    var iStackPtr   = 0;    // Stack height
+    var sNumber     = "";   // Current number
+    var hmList      = null; // Current list
+    for (var i = 0; i < sLine.length(); i++) {
+        var c = sLine.substring(i, i+1);
+        if ("0123456789".contains(c) ) {
+            sNumber = sNumber + c;
+        } else {
+            if (sNumber != "") {
+                hmList.add(toInteger(sNumber));
+                sNumber = "";
+            }
+	        if (c == "[") {
+	            var hmNewList = [];
+	            if (hmList != null) {
+	                hmList.add(hmNewList);
+	            }
+                hmList = hmNewList;
+	            hmStack[iStackPtr] = hmList;
+                iStackPtr++;
+	        } else if (c == "]") {
+	            hmList = hmStack[iStackPtr];
+                iStackPtr --;
+	        }
+        }
+    }
+    return hmStack[0];
+}
+
+function ensureList(hmData) {
+    if (isHashMap(hmData)) { return hmData; }
+    var hmList = [];
+    if (hmData != null) {
+        hmList.add(hmData);
+    }
+    return hmList;
+}
+
+function comparePackets(hmLeft, hmRight) {
+    log("Compare "+ hmLeft.arrayToString(",") + " vs "+ hmRight.arrayToString(","));
+    for (var i=0; i<hmLeft.size() && i<hmRight.size(); i++) {
+        var left  = hmLeft[i];
+        var right = hmRight[i];
+        var iRes = (isHashMap(left) || isHashMap(right)
+                 ? comparePackets(left.ensureList(), right.ensureList())
+                 : left - right);
+        if (iRes != 0) {
+            return iRes;
+        }
+    }
+    return hmLeft.size() - hmRight.size();
+}
+
+// Part 1: Check the order of packets of each pair
+
+var hmAllPackets = [];
+var hmValidPairs = [];
+var iCheck       = 0;
+var hmLeft       = null;
+var iPair        = 0;
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine == "") { continue; }
+    if (hmLeft == null) {
+        hmLeft = readPacket(sLine);
+        hmAllPackets.add(hmLeft);
+    } else {
+        iPair ++;
+        out.writeln("== Pair "+iPair + " ==");
+        var hmRight = readPacket(sLine);
+        hmAllPackets.add(hmRight);
+        if (comparePackets(hmLeft, hmRight) < 0) {
+            hmValidPairs.add(iPair);
+            iCheck = iCheck + iPair;
+        }
+        hmLeft = null;
+    }
+}
+out.writeln("Valid indices = " + hmValidPairs.arrayToString(", "));
+out.writeln("Sum of valid indices = " + iCheck);
+
+// Part 2: Go through all packets, and count number of packets < mark1 and # of packets < mark2
+
+var hmMark1 = readPacket("[[2]]");
+var hmMark2 = readPacket("[[6]]");
+
+var iCount1 = 1;
+var iCount2 = 1;
+for (var i=0; i<hmAllPackets.size(); i++) {
+    if (comparePackets(hmAllPackets[i], hmMark1) < 0) {
+        iCount1 ++;
+    }
+    else if (comparePackets(hmAllPackets[i], hmMark2) < 0) {
+        iCount2 ++;
+    }
+}
+out.writeln("Pos1 = "+ iCount1);
+out.writeln("Pos2 = "+ (iCount1 + iCount2));
+out.writeln("Key = "+ (iCount1 * (iCount1 + iCount2)));
