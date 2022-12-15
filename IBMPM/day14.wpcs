@@ -1,0 +1,141 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 14: Regolith Reservoir ---
+
+function log(sMsg) {
+    //out.writeln(sMsg);
+}
+
+var hmGrid = [];
+var iGridMinX = null;
+var iGridMaxX = null;
+var iGridMinY = 0;  // Given
+var iGridMaxY = null;
+
+function getPixel(x, y) {
+    if (x < iGridMinX || x > iGridMaxX) { return "X"; }
+    if (y < iGridMinY || y > iGridMaxY) { return "X"; }
+    var hmColumn = hmGrid[x];
+    if (hmColumn == null) { hmColumn = []; hmGrid[x] = hmColumn; }
+    return hmColumn[y];
+}
+
+function setPixel(x, y, c) {
+    var hmColumn = hmGrid[x];
+    if (hmColumn == null) { hmColumn = []; hmGrid[x] = hmColumn; }
+    hmColumn[y] = c;
+}
+
+function addPixel(x, y) {
+    setPixel(x,y,"#");
+    if (iGridMinX == null || x<iGridMinX) { iGridMinX = x; }
+    if (iGridMinY == null || y<iGridMinY) { iGridMinY = y; }
+    if (iGridMaxX == null || x>iGridMaxX) { iGridMaxX = x; }
+    if (iGridMaxY == null || y>iGridMaxY) { iGridMaxY = y; }
+}
+
+function drawGrid() {
+    out.writeln("".resizeString((iGridMaxX-iGridMinX)+1, "-",false));
+    for (var y = iGridMinY; y <= iGridMaxY; y++) {
+        for (var x = iGridMinX; x <= iGridMaxX; x++) {
+            out.write( (getPixel(x,y).checkString(".")));
+        }
+        out.writeln("");
+    }
+    out.writeln("".resizeString((iGridMaxX-iGridMinX)+1, "-",false));
+}
+
+function clearGrid() {
+    for (var x = iGridMinX; x <= iGridMaxX; x++) {
+        var hmColumn = hmGrid[x];
+        if (hmColumn == null) { continue; }
+        for (var y = iGridMinY; y <= iGridMaxY; y++) {
+            if (hmColumn[y] == "o") {
+                hmColumn[y] = null;
+            }
+        }
+    }
+}
+
+// Part 1: Check the order of packets of each pair
+
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine == "") { continue; }
+    var hmPairs = sLine.parseDelim(" -> ");
+    var iStartX = hmPairs[0].parseDelim(",", 0).checkInt(0);
+    var iStartY = hmPairs[0].parseDelim(",", 1).checkInt(0);
+    addPixel(iStartX, iStartY);
+    for (var i=1; i<hmPairs.size(); i++) {
+        // Draw routes
+        var iStopX = hmPairs[i].parseDelim(",", 0).checkInt(0);
+        var iStopY = hmPairs[i].parseDelim(",", 1).checkInt(0);
+        for (var j=0; j<1000 && (iStartX != iStopX || iStartY != iStopY); j++) {
+                 if (iStopX > iStartX) { iStartX ++; }
+            else if (iStopX < iStartX) { iStartX --; }
+            else if (iStopY > iStartY) { iStartY ++; }
+            else if (iStopY < iStartY) { iStartY --; }
+            addPixel(iStartX, iStartY);
+        }
+    }
+}
+
+function flowSand(iPart) {
+    var iGrain = 0;
+    while (iGrain < 100000) {
+        var x = 500;
+        var y = 0;
+        // Drop a sandgrain until rock or sand
+        if (iPart == 2 && getPixel(x, y) != null) {
+            out.writeln("Starting position is full");
+            return iGrain;
+        }
+        for (var j=0; j<10000 && y<iGridMaxY; j++) {
+            // Try to go down
+            if (getPixel(x, y+1) == null) {
+                y++;
+            }
+            else if (getPixel(x-1, y+1) == null) {
+                x--;
+                y++;
+            }
+            else if (getPixel(x+1, y+1) == null) {
+                x++;
+                y++;
+            }
+            else {
+                // Can't go anywhere, abort
+                if (x == iGridMinX || x == iGridMaxX) {
+                    out.writeln("Sand falling out of the grid");
+                    return iGrain;
+                }
+                break;
+            }
+        }
+        // Rest the sand grain
+        setPixel(x,y,"o");
+        iGrain ++;
+    }
+    return iGrain;
+}
+
+function flowing(iPart) {
+    drawGrid();
+    var iGrain = flowSand(iPart);
+    drawGrid();
+    out.writeln("Part "+iPart+": "+ iGrain);
+}
+
+flowing(1);
+
+clearGrid();
+
+// Enlarge the grid
+var iHeight = (iGridMaxY - iGridMinY);
+iGridMinX = iGridMinX - iHeight;
+iGridMaxX = iGridMaxX + iHeight;
+iGridMaxY = iGridMaxY + 1;
+
+flowing(2);
