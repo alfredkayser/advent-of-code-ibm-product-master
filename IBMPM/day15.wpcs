@@ -1,0 +1,227 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 15: Beacon Exclusion Zone ---
+
+var step1 = false;
+var iGridSize = 4000000;
+var logger = getLogger(getCompanyCode());
+
+function log(sMsg) {
+    out.writeln(sMsg);
+    //logger.loggerInfo(sMsg);
+}
+
+
+var iGridMinX = null;
+var iGridMaxX = null;
+var iGridMinY = null;
+var iGridMaxY = null;
+
+// Read sensor data
+
+function maxGrid(x,y) {
+    if (iGridMinX == null || x<iGridMinX) { iGridMinX = x; }
+    if (iGridMinY == null || y<iGridMinY) { iGridMinY = y; }
+    if (iGridMaxX == null || x>iGridMaxX) { iGridMaxX = x; }
+    if (iGridMaxY == null || y>iGridMaxY) { iGridMaxY = y; }
+}
+function abs(i) {
+    return (i < 0 ? -i : i);
+}
+
+var hmSensors = [];
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine == "") { continue; }
+    var hmParts = sLine.replace(",","=").replace(":","=").parseDelim("=");
+    //Sensor at x=2= y=18= closest beacon is at x=-2= y=15
+    var hmSensor = [];
+    var iSX = toInteger(hmParts[1]);
+    var iSY = toInteger(hmParts[3]);
+    var iBX = toInteger(hmParts[5]);
+    var iBY = toInteger(hmParts[7]);
+    maxGrid(iSX,iSY);
+    maxGrid(iBX,iBY);
+    var iDeltaX = abs(iSX - iBX);
+    var iDeltaY = abs(iSY - iBY);
+    var iDist = iDeltaX + iDeltaY;
+    hmSensor.d = iDist;
+    hmSensor.x = iSX;
+    hmSensor.y = iSY;
+    hmSensor.BX = iBX;
+    hmSensor.BY = iBY;
+    out.writeln(hmSensor);
+    hmSensors.add(hmSensor);
+}
+
+function getCoverage(hmRow, y, hmSensor)  {
+    var iDist = hmSensor.d;
+    var iSX = hmSensor.x;
+    var iSY = hmSensor.y;
+    var iOffsetY = abs(y - iSY);
+    if (iOffsetY <= iDist) {
+        // In y range
+        var iDistX = iDist - iOffsetY;
+        // determine x coverage
+        var iMinX = iSX - iDistX;
+        var iMaxX = iSX + iDistX;
+        for (var x = iMinX; x <= iMaxX; x++) {
+            if (hmRow[x] == null) {
+                hmRow[x] = "#";
+            }
+        }
+    }
+    if (y == iSY) {
+        hmRow[iSX] = "S";
+    }
+    if (y == hmSensor.BY) {
+        hmRow[hmSensor.BX] = "B";
+    }
+}
+
+
+function checkRow(y) {
+    var hmRow = [];
+    for (var i=0; i<hmSensors.size(); i++) {
+        hmRow.getCoverage(y, hmSensors[i]);
+    }
+    return hmRow;
+}
+
+function drawRow(hmRow) {
+    for (var x = iGridMinX-2; x <= iGridMaxX+2; x++) {
+        out.write((hmRow[x] == null ? "." : hmRow[x]));
+    }
+}
+
+function countRow(hmRow) {
+    var iCount = 0;
+    var x;
+    var c;
+    forEachHmElement(hmRow, x, c) {
+        if (c == "#") { iCount++; }
+    }
+    return iCount;
+}
+
+
+function findGap(y)  {
+    var hmRanges = [];
+    for (var i=0; i<hmSensors.size(); i++) {
+        var hmSensor = hmSensors[i];
+        var iDist = hmSensor.d;
+        var iSX = hmSensor.x;
+        var iSY = hmSensor.y;
+        var iOffsetY = abs(y - iSY);
+        if (iOffsetY <= iDist) {
+            // In y range
+            var iDistX = iDist - iOffsetY;
+            // determine x coverage
+            var hmRange = [];
+            hmRange[0] = iSX - iDistX;
+            hmRange[1] = iSX + iDistX;
+            hmRanges.add(hmRange);
+        }
+    }
+    //log(y + ": hmRanges = "+ hmRanges.size());
+    if (hmRanges.size() == 0) {
+        return null;
+    }
+    var iMinX = hmRanges[0][0];
+    var iMaxX = hmRanges[0][1];
+    for (var i=0; i<hmRanges.size(); i++) {
+        var hmRange = hmRanges[i];
+        var startX = hmRange[0];
+        var stopX  = hmRange[1];
+        if (startX < iMinX) { iMinX = startX; }
+        if (stopX < iMaxX) { iMaxX = stopX; }
+    }
+    var iRanges = hmRanges.size();
+    var x = 0;
+    while (x <= iGridSize) {
+        // Find the x that is not covered by the ranges
+        var bCovered = false;
+        for (var i=0; i<iRanges; i++) {
+            var hmRange = hmRanges[i];
+            if (hmRange[0] <= x && x <= hmRange[1]) {
+                bCovered = true;
+                x = hmRange[1]; // Jump to end of range
+                break;
+            }
+        }
+        if (!bCovered) {
+            log(y + ": x = "+ x);
+            out.writeln(hmRanges);
+            return x;
+        }
+        x++;
+    }
+    return null;
+}
+
+function addBigNum(sA, sB) {
+    var hmA = [];
+    for (var i=sA.length()-1; i>=0; i--) {
+        hmA.add(sA.substring(i,i+1));
+    }
+    var hmB = [];
+    for (var i=sB.length()-1; i>=0; i--) {
+        hmB.add(sB.substring(i,i+1));
+    }
+    var hmSum = [];
+    var iCarry = 0;
+    for (var i=0; i<hmA.size(); i++) {
+        var iA = toInteger(hmA[i]);
+        var iB = toInteger((hmB[i] == null ? "0" : hmB[i]));
+        var iS = iA + iB + iCarry;
+        if (iS > 9) {
+            iS = iS - 10;
+            iCarry = 1;
+        }
+    }
+    hmSum.add(iCarry);
+    var sSum = "";
+    for (var i=hmSum.size()-1; i>=0; i--) {
+        sSum = sSum + toString(hmSum[i]);
+    }
+    return sSum;
+}
+
+if (false) {
+    for (var y=0; y< 22; y++) {
+        var hmRow = checkRow(y);
+        out.write(y + ": ");
+        hmRow.drawRow();
+        out.writeln(" = " + hmRow.countRow());
+    }
+}
+else if (step1) {
+    out.writeln(checkRow(2000000).countRow());
+}
+else if (true) {
+    var iSpotX = null;
+    var iSpotY = null;
+
+    // Limit the grid
+    if (iGridMinX < 0) { iGridMinX = 0; }
+    if (iGridMinY < 0) { iGridMinY = 0; }
+    if (iGridMaxX > iGridSize) { iGridMaxX = iGridSize; }
+    if (iGridMaxY > iGridSize) { iGridMaxY = iGridSize; }
+    // Find the one place without coverage
+    for (var y = iGridMinY; y <= iGridMaxY; y++) {
+        var x = findGap(y);
+        if (x != null) {
+            iSpotX = x;
+            iSpotY = y;
+            break;
+        }
+    }
+
+    out.writeln("Spot = " + iSpotX + "," + iSpotY);
+
+    // BigNum required for this:
+    var sSum = addBigNum(toString(iSpotX*4) + "000000", toString(iSpotY));
+    out.writeln("Tuning frequency = " + sSum);
+}
