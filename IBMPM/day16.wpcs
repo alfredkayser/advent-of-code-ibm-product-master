@@ -2,7 +2,7 @@
 // Code of Advent 2022
 //
 
-// --- Day 15: Beacon Exclusion Zone ---
+// --- Day 16 ---
 
 var step1 = true;
 var iMaxMinutes = 30;
