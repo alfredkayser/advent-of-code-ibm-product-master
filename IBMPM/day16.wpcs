@@ -1,0 +1,219 @@
+//
+// Code of Advent 2022
+//
+
+// --- Day 15: Beacon Exclusion Zone ---
+
+var step1 = true;
+var iMaxMinutes = 30;
+var sStartRoom = "AA";
+var logger = getLogger(getCompanyCode());
+
+function log(sMsg, sParam) {
+    sMsg = toString(sMsg) + ": " +toString(sParam);
+    out.writeln(sMsg);
+    logger.loggerInfo(sMsg);
+}
+function abs(i) {
+    return (i < 0 ? -i : i);
+}
+var jmClass = null;
+var jmClassName = null;
+
+function getObjectType(oValue) {
+    if (oValue == null) { return "NULL"; }
+    if (jmClass == null) {
+        jmClass = createJavaMethod("java.lang.Object","getClass");
+        jmClassName = createJavaMethod("java.lang.Class","getName");
+    }
+    return oValue.runJavaMethod(jmClass).runJavaMethod(jmClassName);
+}
+function isHashMap(oValue) {
+    return (getObjectType(oValue) == "java.util.HashMap");
+}
+function arrayToString(oValue, sDelim) {
+    if (!isHashMap(oValue)) { return toString(oValue); }
+    var sString = "";
+    for (var j=0; j<oValue.size(); j++) {
+        if (sString != "") { sString = sString + sDelim; }
+        sString = sString + oValue[j].arrayToString(sDelim);
+    }
+    return "[" + sString + "]";
+}
+
+
+// Read data set
+var hmValveRates = [];
+var hmRoutes = [];
+var hmRooms = [];
+var hmRoomKey = [];
+
+var sLine;
+forEachLine(in, sLine) {
+    if (sLine == "") { continue; }
+    // Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
+    var hmParts = sLine.replace(", ","|").parseDelim(" ");
+    var sName = hmParts[1];
+    var iRate = hmParts[4].replace("rate=","").replace(";","").checkInt(0);
+    if (iRate > 0) {
+        hmValveRates[sName] = iRate;
+    }
+    var iRoomKey = hmRooms.size();
+    hmRoomKey[sName] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".substring(iRoomKey, iRoomKey+1);
+    hmRoutes[sName] = hmParts[9].parseDelim("|");
+    hmRooms.add(sName);
+}
+
+var hmShortestPath = [];
+
+function determinePathLengths() {
+    // https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm
+    var iRooms = hmRooms.size();
+    // Populate direct routes and from room to itself (probably not needed...)
+    for (var u=0; u<iRooms; u++) {
+        var sFrom = hmRooms[u];
+        // for each direct route, path len = 1
+        var hmRoomRoutes = hmRoutes[sFrom];
+        for (var v=0; v<hmRoomRoutes.size(); v++) {
+            hmShortestPath[sFrom + "-" + hmRoomRoutes[v]] = 1;
+        }
+        // For route to back to this room, path len = 0;
+        hmShortestPath[sFrom + "-" + sFrom] = 0;
+    }
+    // Calculate distances between all rooms
+    for (var k=0; k<iRooms; k++) {
+        var sFrom = hmRooms[k];
+        for (var i=0; i<iRooms; i++) {
+            var sTo = hmRooms[i];
+            var iPath1 = hmShortestPath[sFrom + "-" + sTo];
+            if (iPath1 == null) {
+                continue;
+            }
+            for (var j=0; j<iRooms; j++) {
+                var sOther = hmRooms[j];
+                var iPath2 = hmShortestPath[sFrom + "-" + sOther];
+                if (iPath2 == null) {
+                    continue;
+                }
+                var iPathLen = iPath1 + iPath2;
+                var iCurrLen = hmShortestPath[sTo + "-" + sOther];
+                if (iCurrLen == null || iPathLen < iCurrLen) {
+                    // Keep track of shortest path between two rooms
+                    hmShortestPath[sTo + "-" + sOther] = iPathLen;
+                }
+            }
+        }
+    }
+    log("Populated paths", hmShortestPath.size());
+}
+
+function findPath(sRoom, iTime, hmValvesOpened, iValvesOpened) {
+    if (iValvesOpened == hmValveRates.size()) {
+        return 0;   // All valves are open, no more pressure to be achieved...
+    }
+    var iPressure = 0;
+    var sDestinationValve;
+    var iDestinationRate;
+    forEachHmElement(hmValveRates, sDestinationValve, iDestinationRate) {
+        if (hmValvesOpened[sDestinationValve] == true) {
+            continue;
+        }
+        var iReleaseTime = iTime + hmShortestPath[sRoom + "-" + sDestinationValve] + 1;
+        if (iReleaseTime <= iMaxMinutes) {
+            // Open selected valve
+            hmValvesOpened[sDestinationValve] = true;
+            // Determine max pressure we can get from the selected valve onwards
+            var iNewPressure = iDestinationRate * (iMaxMinutes - iReleaseTime) + findPath(sDestinationValve, iReleaseTime, hmValvesOpened, iValvesOpened+1);
+            if (iNewPressure > iPressure) {
+                iPressure = iNewPressure;
+            }
+            // Close selected valve
+            hmValvesOpened[sDestinationValve] = false;
+        }
+    }
+    return iPressure;
+}
+
+var hmPressureCache = [];
+
+function makeKey(hmValveOpened, sRoom1, iTime1, sRoom2, iTime2) {
+    var sKey = "";
+    var sValve;
+    var bOpen;
+    forEachHmElement(hmValveOpened, sValve, bOpen) {
+        if (bOpen) {
+            sKey = sKey + hmRoomKey[sValve];    // Map to one letter to preserve memory
+        }
+    }
+    return sKey + "-" + hmRoomKey[sRoom1] + iTime1 + hmRoomKey[sRoom2] + iTime2;
+}
+
+function findPathWithHelp(sMyRoom, iMyTime, sElRoom, iElTime, hmValvesOpened, iValvesOpened) {
+    if (iValvesOpened == hmValveRates.size()) {
+        return 0;   // All valves are open, no more pressure to be achieved...
+    }
+
+    // Check cache if this combination was found already
+    var sKey1 = makeKey(hmValvesOpened, sMyRoom, iMyTime, sElRoom, iElTime);
+    var iPres1 = hmPressureCache[sKey1];
+    if (iPres1 != null) {
+        return iPres1;
+    }
+    var sKey2 = makeKey(hmValvesOpened, sElRoom, iElTime, sMyRoom, iMyTime);
+    var iPres2 = hmPressureCache[sKey2];
+    if (iPres2 != null) {
+        return iPres2;
+    }
+
+    var iPressure = 0;
+    var sDestinationValve;
+    var iDestinationRate;
+    forEachHmElement(hmValveRates, sDestinationValve, iDestinationRate) {
+        if (hmValvesOpened[sDestinationValve] == true) {
+            continue;
+        }
+        // Check which is the best to move: me or the helper
+        var iMyReleaseTime = iMyTime + hmShortestPath[sMyRoom + "-" + sDestinationValve] + 1;
+        var iElReleaseTime = iElTime + hmShortestPath[sElRoom + "-" + sDestinationValve] + 1;
+        if (iMyReleaseTime <= iElReleaseTime && iMyReleaseTime <= iMaxMinutes) {
+            // Open selected valve
+            hmValvesOpened[sDestinationValve] = true;
+            // Determine max pressure we can get from the selected valve onwards
+            var iNewPressure = iDestinationRate * (iMaxMinutes - iMyReleaseTime) + findPathWithHelp(sDestinationValve, iMyReleaseTime, sElRoom, iElTime, hmValvesOpened, iValvesOpened+1);
+            if (iNewPressure > iPressure) {
+                iPressure = iNewPressure;
+            }
+            // Close selected valve
+            hmValvesOpened[sDestinationValve] = false;
+        }
+        if (iElReleaseTime <= iMyReleaseTime && iElReleaseTime <= iMaxMinutes) {
+            // Open selected valve
+            hmValvesOpened[sDestinationValve] = true;
+            // Determine max pressure we can get from the selected valve onwards
+            var iNewPressure = iDestinationRate * (iMaxMinutes - iElReleaseTime) + findPathWithHelp(sMyRoom, iMyTime, sDestinationValve, iElReleaseTime, hmValvesOpened, iValvesOpened+1);
+            if (iNewPressure > iPressure) {
+                iPressure = iNewPressure;
+            }
+            // Close selected valve
+            hmValvesOpened[sDestinationValve] = false;
+        }
+    }
+    // Keep cache of found combinations
+    if (hmPressureCache.size() < 1000000) { // Keep to sane limit
+        hmPressureCache[sKey1] = iPressure;
+        hmPressureCache[sKey2] = iPressure;
+    }
+    return iPressure;
+}
+
+determinePathLengths();
+
+var iMaxPressure = findPath(sStartRoom, 0, [], 0);
+
+log("iMaxPressure", iMaxPressure);
+
+iMaxMinutes = 26;
+var iMaxPressureWithHelp = findPathWithHelp(sStartRoom, 0, sStartRoom, 0, [], 0);
+
+log("iMaxPressureWithHelp", iMaxPressureWithHelp);
+
