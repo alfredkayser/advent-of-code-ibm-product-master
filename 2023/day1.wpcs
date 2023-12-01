@@ -1,0 +1,53 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 1: Trebuchet?! ---
+
+var bRound2 = false;
+var hmLines = [];
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+
+function checkNumber(sWord) {
+    var sDigits = "0123456789";
+    var sChar = sWord.substring(0,1);
+    if (sDigits.contains(sChar)) {
+        return toInteger(sChar);
+    }
+    else if (bRound2) {
+        var hmWords = "one,two,three,four,five,six,seven,eight,nine".parseDelim(",");
+        for (var j=0; j<hmWords.size(); j++) {
+            if (sWord.startsWith(hmWords[j])) {
+                return j+1;
+            }
+        }
+    }
+    return null;
+}
+
+function day1() {
+    var iTotal = 0;
+    for (var i=0; i<hmLines.size(); i++) {
+        var sLine = hmLines[i];
+        var iFirstNumber = null;
+        var iLastNumber = null;
+        while (sLine.length() > 0) {
+            var iNumber = checkNumber(sLine);
+            if (iNumber != null) {
+                iLastNumber = iNumber;
+                if (iFirstNumber == null) { iFirstNumber = iNumber; }
+            }
+            sLine = sLine.substring(1);
+        }
+        iTotal = iTotal + (10*iFirstNumber + iLastNumber);
+    }
+    return iTotal;
+}
+
+out.writeln("Round 1: " + day1());
+bRound2 = true;
+out.writeln("Round 2: " + day1());
