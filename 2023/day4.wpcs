@@ -1,0 +1,130 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 3: Gear Ratios ---
+
+var round2 = false;
+var hmLines = [];
+
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+function maxi(i1, i2) {
+    return (i1>i2 ? i1 : i2);
+}
+
+function charAt(sString, iPos) {
+    return sString.substring(iPos, iPos+1);
+}
+
+function hasSymbol(iRow, iStart, iEnd) {
+    var sLine = hmLines[iRow];
+    if (sLine.charAt(iStart-1) != ".") {
+        return true;
+    }
+    if (sLine.charAt(iEnd) != ".") {
+        return true;
+    }
+    if (iRow > 0) {
+        sLine = hmLines[iRow-1];
+        for (var k=iStart-1; k<iEnd+1; k++) {
+            if (sLine.charAt(k) != ".") {
+                return true;
+            }
+        }
+    }
+    if (iRow +1 < hmLines.size()) {
+        sLine = hmLines[iRow+1];
+        for (var k=iStart-1; k<iEnd+1; k++) {
+            if (sLine.charAt(k) != ".") {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function isGear(iRow, iStart, iEnd) {
+    var sLine = hmLines[iRow];
+    if (sLine.charAt(iStart-1) == "*") {
+        return iRow + "," + (iStart-1);
+    }
+    if (sLine.charAt(iEnd) != ".") {
+        return iRow + "," + iEnd;
+    }
+    if (iRow > 0) {
+        sLine = hmLines[iRow-1];
+        for (var k=iStart-1; k<iEnd+1; k++) {
+            if (sLine.charAt(k) != ".") {
+                return (iRow-1) + "," + k;
+            }
+        }
+    }
+    if (iRow+1 < hmLines.size()) {
+        sLine = hmLines[iRow+1];
+        for (var k=iStart-1; k<iEnd+1; k++) {
+            if (sLine.charAt(k) != ".") {
+                return (iRow+1) + "," + k;
+            }
+        }
+    }
+    return null;
+}
+
+
+function game() {
+    var hmGears = [];
+
+    var iTotal = 0;
+    for (var i=0; i<hmLines.size(); i++) {
+        hmLines[i] = "." + hmLines[i] + ".";
+    }
+    for (var i=0; i<hmLines.size(); i++) {
+        var sLine = hmLines[i];
+        var bInNumber = false;
+        var iNumber = 0;
+        var iStart = 0;
+        for (var j=0; j<sLine.length(); j++) {
+            var sChar = sLine.substring(j, j+1);
+            var iNum = "0123456789".indexOf(sChar);
+            if (iNum >= 0) {
+                if (!bInNumber) { iStart = j; bInNumber = true; }
+                iNumber = iNumber * 10 + iNum;
+            } else if (bInNumber) {
+                // End of number, check if there a symbol next to it
+                if (round2) {
+                    var posGear = isGear(i, iStart, j);
+                    if (posGear != null) {
+                        out.writeln("Number near gear found: "+ posGear);
+                        var iGear = hmGears[posGear];
+                        if (iGear == null) {
+                            out.writeln("First number: "+ iNumber);
+                            hmGears[posGear] = iNumber; // First number for this gear: store it
+                        } else {
+                            out.writeln("Second number: "+ iNumber);
+                            // Second number for this gear: calculate ratio
+                            var iRatio = iGear * iNumber;
+                            out.writeln("Gear ratio: "+ iRatio);
+                            iTotal = iTotal + iRatio;
+                        }
+                    }
+                } else {
+                    if (hasSymbol(i, iStart, j)) {
+                        out.writeln(iNumber);
+                        iTotal = iTotal + iNumber;
+                    }
+                }
+                bInNumber = false;
+                iNumber = 0;
+            }
+        }
+    }
+    return iTotal;
+}
+
+out.writeln("Round 1: " + game());
+round2 = true;
+out.writeln("Round 2: " + game());

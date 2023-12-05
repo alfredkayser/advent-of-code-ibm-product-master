@@ -1,0 +1,70 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 3: Scratchcards ---
+
+var round2 = false;
+var hmLines = [];
+
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+function maxi(i1, i2) {
+    return (i1>i2 ? i1 : i2);
+}
+
+function charAt(sString, iPos) {
+    return sString.substring(iPos, iPos+1);
+}
+
+function power2(iCnt) {
+    if (iCnt < 3) { return iCnt; }
+    var r = 4;
+    for (var i=3; i<iCnt; i++) {
+        r = r * 2;
+    }
+    return r;
+}
+
+function game() {
+    var iTotal = 0;
+    var iCards = [];
+    for (var i=0; i<hmLines.size(); i++) {
+        hmLines[i] = hmLines[i];
+        iCards[i] = 1;
+    }
+    for (var i=0; i<hmLines.size(); i++) {
+        var sLine = hmLines[i].parseDelim(": ",1);
+        var hmWinning = sLine.parseDelim("|",0).parseDelim(" ");
+        var hmNumbers = sLine.parseDelim("|",1).parseDelim(" ");
+        var hmKeys = [];
+        for (var j=0; j<hmWinning.size(); j++) {
+            var sNum = hmWinning[j].checkString("");
+            if (sNum != "") { hmKeys[sNum] = true; }
+        }
+        var iCount = 0;
+        for (var j=0; j<hmNumbers.size(); j++) {
+            var sNum = hmNumbers[j].checkString("");
+            if (sNum == "" || !hmKeys.containsKey(hmNumbers[j])) { continue; }
+            iCount++;
+        }
+        var r;
+        if (round2) {
+            r = iCards[i];
+            for (var j=1; j<=iCount; j++) {
+                iCards[i+j] = iCards[i+j] + r;
+            }
+        } else {
+            r = power2(iCount);
+        }
+        iTotal = iTotal + r;
+    }
+    return iTotal;
+}
+
+out.writeln("Round 1: " + game());
+round2 = true;
+out.writeln("Round 2: " + game());

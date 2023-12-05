@@ -1,0 +1,58 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 2: Cube Conundrum ---
+
+var bRound2 = false;
+var hmLines = [];
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+function maxi(i1, i2) {
+    return (i1>i2 ? i1 : i2);
+}
+
+function game() {
+    var iTotal = 0;
+    for (var i=0; i<hmLines.size(); i++) {
+        var hmLine = hmLines[i].parseDelim(":");
+        var iGame = hmLine[0].replace("Game ","").checkInt(0);
+        var hmRuns = hmLine[1].parseDelim(";");
+        var bOK = true;
+        var iMinRed = 0;
+        var iMinGreen = 0;
+        var iMinBlue = 0;
+        for (var j=0; j<hmRuns.size(); j++) {
+	        var iRed = 0;
+	        var iBlue = 0;
+	        var iGreen = 0;
+	        var hmParts = hmRuns[j].parseDelim(",");
+            for (var k=0; k<hmParts.size(); k++) {
+	            var hmToken = hmParts[k].checkString("").parseDelim(" ");
+	            var iCnt = hmToken[0].checkInt(0);
+	            var sColor = hmToken[1].checkString("").toLowerCase();
+	            if (sColor == "red") { iRed = iRed + iCnt; iMinRed = maxi(iCnt, iMinRed); }
+	            else if (sColor == "blue") { iBlue = iBlue + iCnt; iMinBlue = maxi(iCnt, iMinBlue); }
+	            else if (sColor == "green") { iGreen = iGreen + iCnt; iMinGreen = maxi(iCnt, iMinGreen); }
+            }
+            if (iRed > 12 || iGreen > 13 || iBlue > 14) {
+                bOK = false;
+            }
+        }
+        if (bRound2) {
+            iTotal = iTotal + ( iMinRed * iMinBlue * iMinGreen);
+        }
+        else if (bOK) {
+            // only 12 red cubes, 13 green cubes, and 14 blue cubes
+            iTotal = iTotal + iGame;
+        }
+    }
+    return iTotal;
+}
+
+out.writeln("Round 1: " + game());
+bRound2 = true;
+out.writeln("Round 2: " + game());
