@@ -1,0 +1,71 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 9: Mirage Maintenance ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+function parseLine(sLine) {
+    var hmResults = [];
+    var sNum = "";
+    var bInNum = false;
+    for (var i=0;i<sLine.length();i++) {
+        var sChar = sLine.char(i);
+        if (bInNum) {
+            if (sChar == " ") {
+                hmResults.add(toInteger(sNum));
+                bInNum = false;
+            } else {
+                sNum = sNum + sChar;
+            }
+        } else if (sChar != " ") {
+            bInNum = true;
+            sNum = sChar;
+        }
+    }
+    if (bInNum) {
+        hmResults.add(toInteger(sNum));
+    }
+    return hmResults;
+}
+
+function game(round2) {
+    var iResult = 0;
+    for (var i=0; i<hmLines.size(); i++) {
+        var hmNumbers = hmLines[i].parseLine();
+        var hmPrevRow = hmNumbers;
+        var bAllZero = false;
+        var hmFirstNrs = [];
+        var hmLastNrs = [];
+        for (var j=0; j<100000 && !bAllZero; j++) {
+            // Determine next row
+            var hmRow = [];
+            var c = hmPrevRow.size()-1;
+            hmFirstNrs[j] = hmPrevRow[0];
+            hmLastNrs[j] = hmPrevRow[c];
+            bAllZero = true;
+            for (var k=0; k<c; k++) {
+                var d = hmPrevRow[k+1] - hmPrevRow[k];
+                if (d!=0) { bAllZero = false; }
+                hmRow[k] = d;
+            }
+            hmPrevRow = hmRow;
+        }
+        // Add up the last nrs
+        var t = 0;
+        for (var j=hmFirstNrs.size()-1; j>=0; j--) {
+            t = (round2 ? hmFirstNrs[j] - t : hmLastNrs[j] + t);
+        }
+        iResult = iResult + t;
+    }
+    return iResult;
+}
+
+w("Round 1: " + game(false));
+w("Round 2: " + game(true));

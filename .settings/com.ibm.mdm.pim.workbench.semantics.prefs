@@ -1,0 +1,3 @@
+com.ibm.mdm.pim.workbench.semantics.checkers.CheckVarsParamsDefinedNotUsed=Error
+com.ibm.mdm.pim.workbench.semantics.checkers.javadoc.MissingCommentAboveFunction=Ignore
+eclipse.preferences.version=1
