@@ -1,0 +1,110 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 12: Hot Springs ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = toBigInteger(0);
+var big1 = toBigInteger(1);
+
+var hm = [];
+function getM(ml, pc) {
+    var r = hm[ml];
+    return (r == null ? null : r[pc]);
+}
+function setM(ml, pc, v) {
+    var r = hm[ml];
+    if (r == null) { r = []; hm[ml] = r; }
+    r[pc] = v;
+    return v;
+}
+
+function rotateMap(hmMap) {
+    var ms = hmMap.size();
+    var mw = hmMap[0].length();
+    var hmRotated = [];
+    for (var k=0;k<mw;k++) {
+        hmRotated[k] = "";
+    }
+    for (var j=0;j<ms;j++) {
+        var sLine = hmMap[j];
+        for (var k=0;k<mw;k++) {
+            hmRotated[k] = hmRotated[k] + sLine.char(k);
+        }
+    }
+    return hmRotated;
+}
+
+function compare(s1, s2) {
+    if (s1 == s2) { return 0; }
+    var c = 0;
+    for (var j=0;j<s1.length();j++) {
+        if (s1.char(j) != s2.char(j)) {
+            c++;
+        }
+    }
+    return c;
+}
+
+function findMirror(hmMap, d) {
+    var ms = hmMap.size();
+    for (var j=0;j<ms-1;j++) {
+        // Check every row if that is a mirror row
+        var diff = 0;
+        for (var k=0; j-k>=0 && j+k+1 < ms; k++) {
+            diff = diff + compare(hmMap[j-k],hmMap[j+k+1]);
+        }
+        if (diff == d) {
+        w("j=" +j + " diff=" + diff);
+            return j+1;
+        }
+    }
+    return 0;
+}
+
+function game(d) {
+    var t=big0;
+    var big100 = toBigInteger(100);
+    var hmMap = [];
+    for (var i=0; i<hmLines.size(); i++) {
+        // Read each map
+        var sLine = hmLines[i];
+        if (sLine == "") { // End of map
+            var ch = hmMap.findMirror(d);
+            var cv = hmMap.rotateMap().findMirror(d);
+            w("Ch=" +ch + " Cv=" +cv);
+            t = t.bigAdd(bigMultiply(big100, toBigInteger(ch))).bigAdd(toBigInteger(cv));
+            hmMap = [];
+        } else {
+            hmMap.add(sLine);
+        }
+    }
+    return t;
+}
+
+function ww(s) {
+    out.writeln(s);
+    getLogger(getCompanyCode()).loggerInfo(s);
+}
+
+w("Round 1: " + game(0));
+w("Round 2: " + game(1));

@@ -1,0 +1,118 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 12: Hot Springs ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+
+function matchit(m, l) {
+    if (m.length() < l) { return false; }
+    if (m.substring(0, l).contains(" ")) { return false; }
+    if (m.length() != l && m.char(l) == "#") { return false; }
+    return true;
+}
+
+var hm = [];
+function getM(ml, pc) {
+    var r = hm[ml];
+    return (r == null ? null : r[pc]);
+}
+function setM(ml, pc, v) {
+    var r = hm[ml];
+    if (r == null) { r = []; hm[ml] = r; }
+    r[pc] = v;
+    return v;
+}
+
+var big0 = toBigInteger(0);
+var big1 = toBigInteger(1);
+
+function findmatch(m, p, pc) {
+//    w("m=" +toString(m));
+//    w("PC=" +toString(pc));
+    var ml = m.length();
+    var count = getM(ml, pc);
+    if (count != null) { return count; }
+    count = big0;
+    var l = toInteger(p[pc]);
+    var ps = p.size()-1;
+    for (var i=0; i+l<=ml; i++) {
+        // Check every possible part
+        var il=i+l;
+        var part = m.substring(i,il);
+        if (!part.contains(" ")) {
+            var rl = ml - il;
+            if (rl == 0) { // End of line
+                if (pc>=ps) { count = count.bigAdd(big1); }
+            } else {
+                var rest = m.substring(il);
+                if (!rest.startsWith("#")) {
+                   // Valid, check the rest (if anything left over)
+                   if (pc>=ps) {
+                       if (!rest.contains("#")) { count = count.bigAdd(big1); }
+                   } else {
+                       if (rest.length()>0) {
+                           rest = rest.substring(1);   // Skip the char after the match for next matches
+                       }
+                       count = count.bigAdd(findmatch(rest.trim(), p, pc+1));
+                   }
+                }
+            }
+        }
+        if (part.startsWith("#")) { // don't check the other combinations after the #
+            break;
+        }
+    }
+//    w("C=" +c);
+    return setM(ml, pc, count);
+}
+
+function game(round2) {
+    var t=toBigInteger(0);
+    for (var i=0; i<hmLines.size(); i++) {
+        hm = [];    // Reset the cache
+        var sLine = hmLines[i];
+        var m = sLine.parseDelim(" ",0).replace(".", " ");
+        var p = sLine.parseDelim(" ",1);
+        var mm = m;
+        var pp = p;
+        for (var n=1;n<round2;n++) {
+            mm = mm + "?" + m;
+            pp = pp + "," + p;
+        }
+        var hp = pp.parseDelim(",");
+//        w("mm=" +mm);
+//        w("hp=" +hp);
+        var c = findmatch(mm,hp,0);
+        w("c=" +toString(c));
+        t = t.bigAdd(toBigInteger(c));
+    }
+    return t;
+}
+
+function ww(s) {
+    out.writeln(s);
+    getLogger(getCompanyCode()).loggerInfo(s);
+}
+
+w("Round 1: " + game(1));
+w("Round 2: " + game(5));

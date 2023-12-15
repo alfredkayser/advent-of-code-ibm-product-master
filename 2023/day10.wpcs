@@ -1,0 +1,148 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 10: Pipe Maze ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+var h = [];
+var flow = [];
+var md = 0;
+var mx = hmLines[0].length();
+var my = hmLines.size();
+
+function getDist(x,y){
+//    w("gh: x="+x + " y="+y);
+    var r = h[y];
+    if (r == null) { return null; }
+    return r[x];
+}
+
+function setDist(x,y,dist){
+    var r = h[y];
+    if (r == null) { r = []; h[y] = r; }
+    r[x] = dist;
+}
+
+function setFlow(x,y,d1,d2){
+    var r = flow[y];
+    if (r == null) { r = []; flow[y] = r; }
+    r[x] = (d1 == "u" || d2 == "u");    // Flowing upwards
+}
+
+var hmFlowX = [];
+var hmFlowY = [];
+var hmDir = [];
+
+var x = 0;
+var y = 0;
+var dist = 0;
+var dir = "A";
+
+function flow() {
+    // Go in the direction
+    var nx = x;
+    var ny = y;
+    if (dir == "d") {
+        ny = y+1;
+    } else if (dir == "u") {
+        ny = y-1;
+    } else if (dir == "r") {
+        nx = x+1;
+    } else {
+        nx = x-1;
+    }
+    // Check boundary
+    if (nx<0 || ny<0 || nx >= mx || ny >= my) { return false; } // Border of maze
+    // Check if allready visitied
+    var cd  = getDist(nx,ny) ;
+    if (cd!= null) { return false; } // Allready was there
+    var p = hmLines[ny].char(nx);
+    if (p == "." || p == null) { return false; }
+    // Check if it is the right pipe, and determine new direction
+    if (p == "L") {
+        if (dir == "u" || dir == "r") { return false; }
+        dir = (dir == "d" ? "r" : "u");
+    }
+    else if (p == "J") {
+        if (dir == "u" || dir == "l") { return false; }
+        dir = (dir == "d" ? "l" : "u");
+    }
+    else if (p == "7") {
+        if (dir == "d" || dir == "l") { return false; }
+        dir = (dir == "u" ? "l" : "d");
+    }
+    else if (p == "F") {
+        if (dir == "d" || dir == "r") { return false; }
+        dir = (dir == "u" ? "r" : "d");
+    }
+    else if (p == "|") {
+        if (dir == "r" || dir == "l") { return false; }
+    }
+    else if (p == "-") {
+        if (dir == "d" || dir == "u") { return false; }
+    }
+    // Go there
+    dist++;
+    x=nx;
+    y=ny;
+    setDist(x,y,dist);
+    if (dist > md) { md = dist; }
+    return true;
+}
+
+function game() {
+    for (var i=0; i<hmLines.size(); i++) {
+        var p = hmLines[i].indexOf("S");
+        if (p>=0) {
+            x = p;
+            y = i;
+            break;
+        }
+    }
+    setDist(x,y,0);
+    // Determine a direction we can flow to
+    dir = "u";
+    if (!flow()) { dir="r"; } else if (!flow()) { dir="d"; } else if (!flow()) { dir="l"; }
+
+    for (var j=0; j<100000; j++) {
+        if (!flow()) {
+            break;
+        }
+    }
+    return (md+1)/2;
+}
+
+function game2() {
+    var c = 0;
+    for (var y=0; y<my; y++) {
+        var bInLoop = false;
+        var sLine = hmLines[y];
+        for (var x=0; x<mx; x++) {
+	        var d = getDist(x,y);
+	        if (d != null) { // crossing the flow
+                var p = sLine.char(x);
+                out.write(p);
+                if (p == "|" || p == "7" || p == "F") { bInLoop = !bInLoop; }  // Direct cross of flowpipe, switch from in to out
+	        }
+	        else if (bInLoop) {
+	            // In the loop
+	            out.write("I");
+	            c++;
+	        } else {
+                out.write("O");
+            }
+        }
+        w("");
+    }
+    return c;
+}
+
+w("Round 1: " + game());
+w("Round 2: " + game2());
