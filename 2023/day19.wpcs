@@ -1,0 +1,202 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 19: Aplenty ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+var mh = hmLines.size();
+var mw = hmLines[0].length();
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+function maxi(i1, i2) { return (i1>i2 ? i1 : i2); }
+function mini(i1, i2) { return (i1<i2 ? i1 : i2); }
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmSubtract = createJavaMethod("java.math.BigInteger", "subtract", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGCD(A,B)        {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function bigSubtract(A,B)   {return A.runJavaMethod(jmSubtract, B);}
+function big(a)             {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = big(0);
+var big1 = big(1);
+
+
+function getM(hm, x, y) {
+    var r = hm[y];
+    return (r == null ? null : r[x]);
+}
+function setM(hm, x, y, v) {
+    var r = hm[y];
+    if (r == null) { r = []; hm[y] = r; }
+    r[x] = v;
+    return v;
+}
+
+function copyRange(range) {
+    var p = [];
+    p.xmin = range.xmin;
+    p.xmax = range.xmax;
+    p.mmin = range.mmin;
+    p.mmax = range.mmax;
+    p.amin = range.amin;
+    p.amax = range.amax;
+    p.smin = range.smin;
+    p.smax = range.smax;
+    return p;
+}
+
+var hmWorkflows=[];
+
+function determinePossibilities(name, range) {
+    if (name == "R") { return big0; }
+    if (name == "A") {
+        return bigMultiply(
+                bigMultiply(big(range.xmax - range.xmin + 1), big(range.mmax - range.mmin + 1)),
+                bigMultiply(big(range.amax - range.amin + 1), big(range.smax - range.smin + 1)));
+    }
+    var hmWfl = hmWorkflows[name];
+    var total = big0;
+    for (var k=0; k<hmWfl.size(); k++) {
+        var hmWflStep = hmWfl[k];
+        var op = hmWflStep.opcode;
+        if (op == "=") {
+            // Add the possibilities of the direct target, and we are done in this workflow
+            return total.bigAdd(determinePossibilities(hmWflStep.dest, range));
+        }
+        // Split range and follow both paths (if applicable)
+        var attrib = hmWflStep.attrib;
+        var value  = hmWflStep.value;
+        if (op == "<" && value > range[attrib+"min"]) {
+            if (value <= range[attrib+"max"]) {
+                // Split the ranges and follow both current workflow, and the new workflow
+                var range2 = copyRange(range);
+                range2[attrib+"max"] = value-1;
+                range[attrib+"min"] = value;
+                total = total.bigAdd(determinePossibilities(hmWflStep.dest, range2));
+            } else {
+                // All goes to the new workflow, no need to follow the other steps in the workflow
+                return total.bigAdd(determinePossibilities(hmWflStep.dest, range));
+            }
+        } else if (op == ">"&& value < range[attrib+"max"]) {
+            if (value >= range[attrib+"min"]) {
+                // Split the ranges and follow both current workflow, and the new workflow
+                var range2 = copyRange(range);
+                range2[attrib+"min"] = value+1;
+                range[attrib+"max"] = value;
+                total = total.bigAdd(determinePossibilities(hmWflStep.dest, range2));
+            } else {
+                // All goes to the new workflow, no need to follow the other steps in the workflow
+                return total.bigAdd(determinePossibilities(hmWflStep.dest, range));
+            }
+        }
+    }
+    return total;
+}
+
+function executeWorkflow(item, name) {
+    var hmWfl = hmWorkflows[name];
+    for (var k=0; k<hmWfl.size(); k++) {
+        var hmWflStep = hmWfl[k];
+        var op = hmWflStep.opcode;
+        if (op == "=") {
+            return hmWflStep.dest;
+        }
+        var attrib = hmWflStep.attrib;
+        var value  = hmWflStep.value;
+        if (op == "<") {
+            if (item[attrib] < value) {
+                return hmWflStep.dest;
+            }
+        } else {
+            if (item[attrib] > value) {
+                return hmWflStep.dest;
+            }
+        }
+    }
+    return "X";
+}
+
+function game(round2) {
+    var total = big0;
+    var bw = true;
+    for (var iLine=0;iLine<hmLines.size();iLine++) {
+        var sLine = hmLines[iLine];
+        if (sLine == "") {
+            bw = false;
+            continue;
+        }
+        if (bw) {
+            var name = sLine.parseDelim("{",0);
+            sLine = sLine.parseDelim("{",1).replace("}","");
+            var p = sLine.parseDelim(",");  // x>2440:R or A or xlq
+            var hmWfl = [];
+            for (var j=0;j<p.size();j++) {
+                var hmWflStep = [];
+                var s = p[j];
+                if (s.contains(":")) {
+                    hmWflStep.opcode = "<";
+                    var op = s.indexOf("<");
+                    if (op<0) { op = s.indexOf(">"); hmWflStep.opcode = ">"; }
+                    hmWflStep.attrib = s.substring(0,op);
+                    s = s.substring(op+1);
+                    hmWflStep.value  = toInteger(s.parseDelim(":",0));
+                    hmWflStep.dest   = s.parseDelim(":",1);
+                } else {
+                    hmWflStep.opcode = "=";
+                    hmWflStep.dest  = s;
+                }
+                hmWfl.add(hmWflStep);
+            }
+            hmWorkflows[name] = hmWfl;
+        } else if (round2) {
+            var range = [];
+            range.xmin = 1; range.xmax = 4000;
+            range.mmin = 1; range.mmax = 4000;
+            range.amin = 1; range.amax = 4000;
+            range.smin = 1; range.smax = 4000;
+            total = determinePossibilities("in", range);
+            break;
+        } else {
+            // Items to go through the workflow
+            //{x=787,m=2655,a=1222,s=2876}
+            var p = sLine.replace("{","").replace("}","").parseDelim(",");  // x=787
+            var item = [];
+            for (var j=0; j<p.size(); j++) {
+                var a = p[j].parseDelim("=", 0);
+                var v = p[j].parseDelim("=", 1);
+                item[a] = toInteger(v);
+            }
+            // Execute workflow
+            var name = "in";
+            for (var j=0; j<hmWorkflows.size(); j++) {
+                name = item.executeWorkflow(name);
+                if (name == "A") {
+                    total = total.bigAdd(big(item.x + item.m + item.a + item.s));
+                    break;
+                }
+                else if (name == "R") {
+                    break;
+                }
+            }
+        }
+    }
+    w("total = " + total);
+}
+
+//game(false);
+game(true);
+
+
+//out.writeln(hexToInt("70c71"));

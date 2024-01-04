@@ -1,0 +1,148 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 15: Lens Library ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = toBigInteger(0);
+var big1 = toBigInteger(1);
+
+function getM(hm, x, y) {
+    var r = hm[y];
+    return (r == null ? null : r[x]);
+}
+function setM(hm, x, y, v) {
+    var r = hm[y];
+    if (r == null) { r = []; hm[y] = r; }
+    r[x] = v;
+    return v;
+}
+
+function printMap(hmMap) {
+    var h = hmMap.size();
+    var w = hmMap[0].size();
+    for (var y=0; y<h; y++) {
+        var r = hmMap[y];
+        for (var x=0;x<w;x++) {
+            out.write(r[x]);
+        }
+        out.writeln("");
+    }
+    out.writeln("-------------------");
+}
+
+var sASCII = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[/]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+
+function hashWord(sWord) {
+    var h = 0;
+    for (var i=0; i<sWord.length(); i++) {
+        var c = 33+ sASCII.indexOf(sWord.char(i));
+        h = h+c;
+        h = h*17;
+        var td = h/256;
+        h = h - (td*256);
+    }
+    return h;
+}
+
+function game(d) {
+    var tf=big0;
+    var t=big0;
+    var hmBoxes = [];
+    for (var i=0; i<hmLines.size(); i++) {
+        // Read each map
+        var sLine = hmLines[i];
+        var hmWords = sLine.parseDelim(",");
+        for (var k=0; k<hmWords.size(); k++) {
+            var sWord = hmWords[k];
+//            w("word="+sWord);
+            t = t.bigAdd(toBigInteger(hashWord(sWord)));
+            // Round 2
+            var sLabel = sWord.replace("-","=").parseDelim("=", 0);
+            var b = hashWord(sLabel);
+            var q = hmBoxes[b];
+            if (q == null) { q=[]; hmBoxes[b] = q; }
+            if (sWord.contains("=")) {
+                var sLabel = sWord.parseDelim("=", 0);
+                var iLength = toInteger(sWord.parseDelim("=", 1));
+                // Upsert
+                var bFound = false;
+                for (var j=0;j<q.size();j++) {
+                    if (q[j].label == sLabel) {
+                        q[j].length = iLength;
+                        bFound = true;
+                        break;
+                    }
+                }
+                if (!bFound) {
+                    var lens = [];
+                    lens.label = sLabel;
+                    lens.length = iLength;
+                    q.add(lens);
+                }
+            }
+            else if (sWord.contains("-")) {
+                // Delete
+                var sLabel = sWord.parseDelim("-", 0);
+                for (var j=0;j<q.size();j++) {
+                    if (q[j].label == sLabel) {
+                        q[j].label = null;  // Delete it by nulling it
+                        break;
+                    }
+                }
+            }
+//            w("Box: " + b);
+//            var q = hmBoxes[b];
+//            for (var j=0;j<q.size();j++) {
+//                if (q[j].label != null) {
+//                    w(q[j].label + " = "+ q[j].length);
+//                }
+//            }
+        }
+        w("-------------------");
+        var k;
+        var q;
+        forEachHmElement(hmBoxes, k, q) {
+            if (q != null) {
+                var box = toInteger(k);
+                w("Box: " + k);
+                var slot = 1;
+                for (var j=0;j<q.size();j++) {
+                    if (q[j].label != null) {
+                        w(q[j].label + " = "+ q[j].length);
+                        var f = (box+1) * slot * q[j].length;
+                        w("f=" +f);
+                        tf = tf.bigAdd(toBigInteger(f));
+                        slot++; 
+                    }
+                }
+            }
+        }
+        w("-------------------");
+    }
+    w("Round 1 = " + t);
+    w("round 2 = " + tf);
+    return t;
+}
+
+game();
+
