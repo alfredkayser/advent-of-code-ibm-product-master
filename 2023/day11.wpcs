@@ -1,0 +1,86 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 10: Pipe Maze ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+
+function game(iExpansion) {
+    var gx = [];
+    var gy = [];
+    var nx = [];
+    var ny = [];
+
+    // Find the galaxies
+    for (var i=0; i<hmLines.size(); i++) {
+        var sLine = hmLines[i];
+        for (var j=0; j<sLine.length(); j++) {
+            if (sLine.char(j) == "#") {
+                gx.add(j);
+                gy.add(i);
+                nx.add(j);
+                ny.add(i);
+            }
+        }
+    }
+    // Identify empty rows & columns
+    for (var i=hmLines.size()-1; i>=0; i--) {
+        if (!gy.containsValue(i)) {
+            // Empty row: insert extra row by moving all y's higher than this row
+            for (var j=0; j<gy.size(); j++) {
+                var y = gy[j];
+                if (y > i) { ny[j] = ny[j] + iExpansion; }
+            }
+        }
+    }
+    var sLine = hmLines[0];
+    for (var j=sLine.length(); j>=0; j--) {
+        if (!gx.containsValue(j)) {
+            // Empty column: insert extra column by moving all x's higher than this column
+            for (var i=0; i<gx.size(); i++) {
+                var x = gx[i];
+                if (x > j) { nx[i] = nx[i] + iExpansion; }
+            }
+        }
+    }
+    // For all pairs determine path length
+    var c = toBigInteger(0);
+    for (var i=0; i<nx.size(); i++) {
+        var x1 = nx[i];
+        var y1 = ny[i];
+        for (var j=i+1; j<nx.size(); j++) {
+            var x2 = nx[j];
+            var y2 = ny[j];
+            // determine path length
+            var dx = x2 - x1; if (dx<0) { dx = -dx; }
+            var dy = y2 - y1; if (dy<0) { dy = -dy; }
+            c = c.bigAdd(bigAdd(toBigInteger(dx), toBigInteger(dy)));
+        }
+    }
+    return c;
+}
+
+
+w("Round 1: " + game(1));
+w("Round 2: " + game(10-1));
+w("Round 2: " + game(100-1));
+w("Round 2: " + game(1000000-1));

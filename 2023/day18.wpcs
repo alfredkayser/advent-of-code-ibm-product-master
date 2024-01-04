@@ -1,0 +1,173 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 16: The Floor Will Be Lava ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+var mh = hmLines.size();
+var mw = hmLines[0].length();
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+function maxi(i1, i2) { return (i1>i2 ? i1 : i2); }
+function mini(i1, i2) { return (i1<i2 ? i1 : i2); }
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmSubtract = createJavaMethod("java.math.BigInteger", "subtract", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function bigSubtract(A,B)  {return A.runJavaMethod(jmSubtract, B);}
+function big(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = big(0);
+var big1 = big(1);
+
+function getM(hm, x, y) {
+    var r = hm[y];
+    return (r == null ? null : r[x]);
+}
+function setM(hm, x, y, v) {
+    var r = hm[y];
+    if (r == null) { r = []; hm[y] = r; }
+    r[x] = v;
+    return v;
+}
+
+    var mx=0;
+    var my=0;
+    var Mx=0;
+    var My=0;
+
+function printMap(hmMap) {
+    for (var y=My; y<=my; y++) {
+        var r = hmMap[y];
+        if (r == null) { r= []; }
+        for (var x=Mx; x<=mx; x++) {
+            var v = r[x];
+            out.write((v!= null ? v : "."));
+        }
+        out.writeln("");
+    }
+    out.writeln("-------------------");
+}
+
+function countTiles(hmMap) {
+    var c = 0;
+    for (var y=My; y<=my; y++) {
+        var r = hmMap[y];
+        if (r == null) { r= []; }
+        var inLoop = false;
+        for (var x=Mx; x<=mx; x++) {
+            var v = r[x];
+            if (v!= null) {
+                // v = U,D,L,R
+                c++;
+                if (v == "D") { inLoop = false; }
+                if (v == "U") { inLoop = true; }
+            } else {
+                if (inLoop) {
+                    c++;
+                    hmMap.setM(x,y,"*");
+                }
+            }
+        }
+    }
+    hmMap.printMap();
+    return c;
+}
+
+function game() {
+    var map=[];
+    var x=0;
+    var y=0;
+    for (var i=0;i<hmLines.size();i++) {
+        var sLine = hmLines[i];
+        var c = sLine.parseDelim(" ", 0);
+        var s = toInteger(sLine.parseDelim(" ", 1));
+        for (var j=0; j<s; j++) {
+            if (map.getM(x, y) == null) { map.setM(x, y, c); }
+            if (c == "R") { x++; } else if (c == "D") { y++; } else if (c == "L") { x--; } else if (c == "U") { y--; }
+            if (c == "U" || c == "D") {
+                map.setM(x, y, c);
+            }
+            my = maxi(y, my);
+            mx = maxi(x, mx);
+            My = mini(y, My);
+            Mx = mini(x, Mx);
+        }
+    }
+//    map.printMap();
+    w("round 1 = " + map.countTiles());
+}
+
+function hexToInt(s) {
+    var t = 0;
+    for (var i=0;i<s.length();i++) {
+        t = t*16 + "0123456789abcdef".indexOf(s.char(i));
+    }
+    return t;
+}
+
+function area(vertices) {
+    var n = vertices.size();
+    var sum1 = big0;
+    var sum2 = big0;
+
+    for (var i=0; i<n; i++) {
+        var v = vertices[i];
+     var v2 = vertices[(i==n-1 ? 0 : i+1)];
+        sum1 = sum1.bigAdd(bigMultiply(big(v[0]), big(v2[1])));
+        sum2 = sum2.bigAdd(bigMultiply(big(v[1]), big(v2[0])));
+    }
+
+    var a = bigSubtract(sum1, sum2);
+    if (toString(a).startsWith("-")) {
+        a = bigSubtract(sum2, sum1);
+    }
+    return a.bigDivide(big(2));
+}
+
+function game2() {
+    var vertices=[];
+    var x=0;
+    var y=0;
+    var p = [];
+    p.add(x);
+    p.add(y);
+    vertices.add(p);
+    var l=big0;
+    for (var i=0;i<hmLines.size();i++) {
+        var sLine = hmLines[i];
+        var h = sLine.parseDelim("#", 1);
+        var s = h.substring(0,5).hexToInt();
+        w("s="+ s);
+        var d = h.substring(5,6);
+        w("d="+ d);
+        if (d == "0") { x = x + s; } else if (d == "1") { y = y + s; } else if (d == "2") { x = x - s; } else if (d == "3") { y = y - s; }
+        l = l.bigAdd(big(s));
+        var p = [];
+        p.add(x);
+        p.add(y);
+        vertices.add(p);
+    }
+    w("vertices="+vertices);
+    w("l="+l);
+    var a = vertices.area();
+    w("area=" +a);
+//    map.printMap();
+    w("round 2 = " + l.bigDivide(big(2)).bigAdd(a).bigAdd(big1));
+}
+
+game2();
+
+//out.writeln(hexToInt("70c71"));

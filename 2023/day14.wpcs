@@ -1,0 +1,182 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 12: Hot Springs ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = toBigInteger(0);
+var big1 = toBigInteger(1);
+
+function getM(hm, x, y) {
+    var r = hm[y];
+    return (r == null ? null : r[x]);
+}
+function setM(hm, x, y, v) {
+    var r = hm[y];
+    if (r == null) { r = []; hm[y] = r; }
+    r[x] = v;
+    return v;
+}
+
+function printMap(hmMap) {
+    var h = hmMap.size();
+    var w = hmMap[0].size();
+    for (var y=0; y<h; y++) {
+        var r = hmMap[y];
+        for (var x=0;x<w;x++) {
+            out.write(r[x]);
+        }
+        out.writeln("");
+    }
+    out.writeln("-------------------");
+}
+
+function countRocks(hmMap) {
+    var h = hmMap.size();
+    var w = hmMap[0].size();
+    var t = 0;
+    for (var y=0; y<h; y++) {
+        var rf = hmMap[y];
+        var rc = 0;
+        for (var x=0; x<w; x++) {
+            if (rf[x] == "O") { rc++; }
+        }
+        t = t + ((h-y)*rc);
+    }
+    return toBigInteger(t);
+}
+
+function moveRocksNorth(hmMap) {
+    printMap(hmMap);
+    var h = hmMap.size();
+    var w = hmMap[0].size();
+    for (var i=0; i<h; i--) {
+        var bMoved = false;
+        for (var y=1; y<h; y++) {
+            var rf = hmMap[y];
+            var rt = hmMap[y-1];
+            for (var x=0;x<w;x++) {
+                if (rf[x] == "O" && rt[x] == ".") {
+                    rt[x] = "O";
+                    rf[x] = ".";
+                    bMoved = true;
+                }
+            }
+        }
+        //printMap(hmMap);
+        if (!bMoved) { break; }
+    }
+    printMap(hmMap);
+    return hmMap;
+}
+
+function cycleRocks(hmMap) {
+    printMap(hmMap);
+    var h = hmMap.size();
+    var w = hmMap[0].size();
+    for (var i=0; i<h; i--) {
+        var bMoved = false;
+        // Move north
+        for (var y=1; y<h; y++) {
+            var rf = hmMap[y];
+            var rt = hmMap[y-1];
+            for (var x=0; x<w; x++) {
+                if (rf[x] == "O" && rt[x] == ".") {
+                    rt[x] = "O";
+                    rf[x] = ".";
+                    bMoved = true;
+                }
+            }
+        }
+        // Move west
+        for (var x=w-1; x>=1; x--) {
+            for (var y=0; y<h; y++) {
+                var rf = hmMap[y];
+                if (rf[x-1] == "O" && rf[x] == ".") {
+                    rf[x] = "O";
+                    rf[x-1] = ".";
+                    bMoved = true;
+                }
+            }
+        }
+        // Move south
+        for (var y=h-1; y>=1; y--) {
+            var rf = hmMap[y-1];
+            var rt = hmMap[y];
+            for (var x=0;x<w;x++) {
+                if (rf[x] == "O" && rt[x] == ".") {
+                    rt[x] = "O";
+                    rf[x] = ".";
+                    bMoved = true;
+                }
+            }
+        }
+        // Move east
+        for (var x=1;x<w;x++) {
+            for (var y=0; y<h; y++) {
+                var rf = hmMap[y];
+                if (rf[x] == "O" && rf[x-1] == ".") {
+                    rf[x-1] = "O";
+                    rf[x] = ".";
+                    bMoved = true;
+                }
+            }
+        }
+        printMap(hmMap);
+        if (!bMoved) { break; }
+    }
+    printMap(hmMap);
+    return hmMap;
+}
+
+function game(d) {
+    var t=big0;
+    var hmMap = [];
+    for (var i=0; i<hmLines.size(); i++) {
+        // Read each map
+        var sLine = hmLines[i];
+        if (sLine == "") { // End of map
+            if (d) {
+                hmMap.cycleRocks();
+            } else {
+                hmMap.moveRocksNorth();
+            }
+            t = t.bigAdd(countRocks(hmMap));
+            hmMap = [];
+        } else {
+	        var hmRow = [];
+	        for (var k=0; k<sLine.length(); k++) {
+	            hmRow.add(sLine.char(k));
+	        }
+	        hmMap.add(hmRow);
+        }
+    }
+    return t;
+}
+
+function ww(s) {
+    out.writeln(s);
+    getLogger(getCompanyCode()).loggerInfo(s);
+}
+
+w("Round 1: " + game(false));
+w("Round 2: " + game(true));

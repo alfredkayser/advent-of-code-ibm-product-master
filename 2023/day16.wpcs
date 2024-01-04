@@ -1,0 +1,138 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 16: The Floor Will Be Lava ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+var mh = hmLines.size();
+var mw = hmLines[0].length();
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+function maxi(i1, i2) { return (i1>i2 ? i1 : i2); }
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGGCD(A,B)       {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = toBigInteger(0);
+var big1 = toBigInteger(1);
+
+function getM(hm, x, y) {
+    var r = hm[y];
+    return (r == null ? null : r[x]);
+}
+function setM(hm, x, y, v) {
+    var r = hm[y];
+    if (r == null) { r = []; hm[y] = r; }
+    r[x] = v;
+    return v;
+}
+
+function printMap(hmMap, w, h) {
+    for (var y=0; y<h; y++) {
+        var r = hmMap[y];
+        if (r == null) { r= []; }
+        for (var x=0;x<w;x++) {
+            var v = r[x];
+            out.write((v!= null ? "#" : "."));
+        }
+        out.writeln("");
+    }
+    out.writeln("-------------------");
+}
+
+function countTiles(hmVisited) {
+    var t = 0;
+    var y;var r;
+    forEachHmElement(hmVisited, y, r) {
+        t = t + r.size();
+    }
+    return t;
+}
+
+function addBeam(hmBeams,x,y,d) {
+    var hmBeam = [];
+    hmBeam.x = x;
+    hmBeam.y = y;
+    hmBeam.d = d;
+    hmBeams.add(hmBeam);
+}
+
+function beaming(x, y, d) {
+    var hmBeams = [];
+    hmBeams.addBeam(x,y,d);
+    var hmVisited = [];
+    var iBeamCount = 1;
+    for (var i=0; i<100000 && iBeamCount > 0; i++) {
+        var b = hmBeams.size();
+        for (var j=0; j<b && j<1000; j++) {
+            // Move each beam one step further
+            var hmBeam = hmBeams[j];
+            if (hmBeam == null) { continue; }
+            var x = hmBeam.x;
+            var y = hmBeam.y;
+            var d = hmBeam.d;
+            if (d == 0) { x++; } else if (d == 1) { y++; } else if (d == 2) { x--; } else if (d == 3) { y--; }
+            var v = hmVisited.getM(x,y);
+            if (v == null) { v = []; }
+            if (x<0 || y<0 || x>= mw || y>= mh || (v != null && v.containsValue(d))) {
+                hmBeams[j] = null;  // Kill the beam, outside map or allready passed this way
+                iBeamCount --;
+                continue;
+            }
+            v.add(d);   // Keep track of directions coming into this point
+            hmVisited.setM(x,y,v);
+            var c = hmLines[y].char(x);
+            if (c == "/") {
+                d = toInteger("3210".char(d));
+            }
+            else if (c == "\\") {
+                d = toInteger("1032".char(d));
+            }
+            else if (c == "|" && (d == 0 || d == 2)) {
+                d = 1;  // One beam goes down
+                hmBeams.addBeam(x,y,3); // Add a beam going up
+                iBeamCount ++;
+            }
+            else if (c == "-" && (d == 1 || d == 3)) {
+                d = 0;  // One beam goes west
+                hmBeams.addBeam(x,y,2); // Add a beam going east
+                iBeamCount ++;
+            }
+            hmBeam.x = x;
+            hmBeam.y = y;
+            hmBeam.d = d;
+        }
+    }
+    return hmVisited.countTiles();
+}
+
+
+function game() {
+    w("Round 1 = " + beaming(-1,0,0));
+    var max = 0;
+    for (var x=0;x<mw;x++) {
+        max = maxi(max, beaming(x,-1,1));
+        max = maxi(max, beaming(x,mh,3));
+    }
+    for (var y=0;y<mh;y++) {
+        max = maxi(max, beaming(-1,y,0));
+        max = maxi(max, beaming(mw,y,2));
+    }
+    w("round 2 = " + max);
+}
+
+game();
+

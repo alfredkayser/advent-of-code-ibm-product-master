@@ -1,0 +1,248 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 19: Aplenty ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l.trim());}
+var mh = hmLines.size();
+var mw = hmLines[0].length();
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+function maxi(i1, i2) { return (i1>i2 ? i1 : i2); }
+function mini(i1, i2) { return (i1<i2 ? i1 : i2); }
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmAdd       = createJavaMethod("java.math.BigInteger", "add", "java.math.BigInteger");
+var jmSubtract = createJavaMethod("java.math.BigInteger", "subtract", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function bigGCD(A,B)        {return A.runJavaMethod(jmGCD, B);}
+function bigMultiply(A,B)   {return A.runJavaMethod(jmMultiply, B);}
+function bigDivide(A,B)     {return A.runJavaMethod(jmDivide, B);}
+function bigAdd(A,B)        {return A.runJavaMethod(jmAdd, B);}
+function bigSubtract(A,B)   {return A.runJavaMethod(jmSubtract, B);}
+function big(a)             {return jcBI.runJavaConstructor(a.checkString(""));}
+
+var big0 = big(0);
+var big1 = big(1);
+
+
+function getM(hm, x, y) {
+    var r = hm[y];
+    return (r == null ? null : r[x]);
+}
+function setM(hm, x, y, v) {
+    var r = hm[y];
+    if (r == null) { r = []; hm[y] = r; }
+    r[x] = v;
+    return v;
+}
+
+function copyRange(range) {
+    var p = [];
+    p.xmin = range.xmin;
+    p.xmax = range.xmax;
+    p.mmin = range.mmin;
+    p.mmax = range.mmax;
+    p.amin = range.amin;
+    p.amax = range.amax;
+    p.smin = range.smin;
+    p.smax = range.smax;
+    return p;
+}
+
+var hmWorkflows=[];
+
+function determinePossibilities(name, range) {
+    if (name == "R") { return big0; }
+    if (name == "A") {
+        return bigMultiply(
+                bigMultiply(big(range.xmax - range.xmin + 1), big(range.mmax - range.mmin + 1)),
+                bigMultiply(big(range.amax - range.amin + 1), big(range.smax - range.smin + 1)));
+    }
+    var hmWfl = hmWorkflows[name];
+    var total = big0;
+    for (var k=0; k<hmWfl.size(); k++) {
+        var hmWflStep = hmWfl[k];
+        var op = hmWflStep.opcode;
+        if (op == "=") {
+            // Add the possibilities of the direct target, and we are done in this workflow
+            return total.bigAdd(determinePossibilities(hmWflStep.dest, range));
+        }
+        // Split range and follow both paths (if applicable)
+        var attrib = hmWflStep.attrib;
+        var value  = hmWflStep.value;
+        if (op == "<" && value > range[attrib+"min"]) {
+            if (value <= range[attrib+"max"]) {
+                // Split the ranges and follow both current workflow, and the new workflow
+                var range2 = copyRange(range);
+                range2[attrib+"max"] = value-1;
+                range[attrib+"min"] = value;
+                total = total.bigAdd(determinePossibilities(hmWflStep.dest, range2));
+            } else {
+                // All goes to the new workflow, no need to follow the other steps in the workflow
+                return total.bigAdd(determinePossibilities(hmWflStep.dest, range));
+            }
+        } else if (op == ">"&& value < range[attrib+"max"]) {
+            if (value >= range[attrib+"min"]) {
+                // Split the ranges and follow both current workflow, and the new workflow
+                var range2 = copyRange(range);
+                range2[attrib+"min"] = value+1;
+                range[attrib+"max"] = value;
+                total = total.bigAdd(determinePossibilities(hmWflStep.dest, range2));
+            } else {
+                // All goes to the new workflow, no need to follow the other steps in the workflow
+                return total.bigAdd(determinePossibilities(hmWflStep.dest, range));
+            }
+        }
+    }
+    return total;
+}
+
+function executeWorkflow(item, name) {
+    var hmWfl = hmWorkflows[name];
+    for (var k=0; k<hmWfl.size(); k++) {
+        var hmWflStep = hmWfl[k];
+        var op = hmWflStep.opcode;
+        if (op == "=") {
+            return hmWflStep.dest;
+        }
+        var attrib = hmWflStep.attrib;
+        var value  = hmWflStep.value;
+        if (op == "<") {
+            if (item[attrib] < value) {
+                return hmWflStep.dest;
+            }
+        } else {
+            if (item[attrib] > value) {
+                return hmWflStep.dest;
+            }
+        }
+    }
+    return "X";
+}
+
+var hmNodes = [];
+
+function addSignal(hmSignals, sFrom, sPulse, sNode) {
+    var hmSignal = [];
+    hmSignal.from = sFrom;
+    hmSignal.node = sNode;
+    hmSignal.pulse = sPulse;
+//    w("addSignal:"+hmSignal);
+    hmSignals.add(hmSignal);
+}
+
+function game(round2) {
+    for (var iLine=0; iLine<hmLines.size(); iLine++) {
+        var sLine = hmLines[iLine];
+        var sType = "";
+        if (sLine.startsWith("%") || sLine.startsWith("&")) {
+            sType = sLine.char(0);
+            sLine = sLine.substring(1);
+        }
+        var sNode = sLine.parseDelim(" -> ",0);
+        var hmDest = sLine.parseDelim(" -> ",1).parseDelim(", ");
+        var hmNode = [];
+        hmNode.type = sType;
+        hmNode.dest = hmDest;
+        hmNode.state = false;//== off, true == on
+        hmNode.inputs = [];
+        hmNodes[sNode] = hmNode;
+    }
+    var sNode; var hmNode;
+    forEachHmElement(hmNodes, sNode, hmNode) {
+        var d = hmNode.dest;
+        for (var j=0; j<d.size(); j++) {
+            var targetNode = hmNodes[d[j]];
+            if (targetNode != null) {
+                targetNode.inputs[sNode] = "low";
+            }
+        }
+    }
+//    forEachHmElement(hmNodes, sNode, hmNode) {
+//        w(sNode + " = " + hmNode);
+//    }
+    // Start is button sending low to broadcaster
+    var thc = big0;
+    var tlc = big0;
+    for (var run=0;run<10000;run++) {
+        var hmSignals = [];
+        var hc = 0;
+        var lc = 0;
+        hmSignals.addSignal("button", "low", "broadcaster");
+        var pc = 0;
+        var bRxReceivedLow = false;
+        while (pc<hmSignals.size() && pc < 1000) {
+            // sFrom is sending pulse the node
+            var s= hmSignals[pc];pc++;
+            var sFrom  = s.from;
+            var sPulse = s.pulse;
+            if (sPulse == "high") { hc ++; } else { lc ++; }
+            var sNode  = s.node;
+//            w(sFrom + " -" + sPulse + " -> " + sNode);
+            if (sNode == "output") { continue; }
+            if (sNode == "rx") {
+                w("rx received: " + sPulse);
+                if (sPulse == "low") {
+                    bRxReceivedLow = true;
+                    w("run="+run);
+                    break;
+                }
+            }
+            var hmNode = hmNodes[sNode];
+            if (hmNode == null) {
+                continue;
+            }
+            var t = hmNode.type;
+            if (t == "%") {
+                // Flipflop
+                if (sPulse == "high") {
+//                w("%" + sNode +": END SIGNAL");
+                    continue;
+                }
+                var s = hmNode.state;
+                if (s) { // If it was on, it turns off and sends a low pulse
+                    hmNode.state = false;
+                    sPulse = "low";
+                }
+                else {  // If it was off, it turns on and sends a high pulse
+                    hmNode.state = true;
+                    sPulse = "high";
+                }
+//            w("%" + sNode +": state=" + hmNode.state);
+            }
+            else if (t == "&") {
+                // Conjuction:
+                // Update corresponding input to the received pulse
+                hmNode.inputs[sFrom] = sPulse;
+                // if one or more inputs are low, then send high otherwise low
+//            w("&" + sNode +": inputs=" + hmNode.inputs);
+                sPulse = (hmNode.inputs.containsValue("low") ? "high" : "low");
+            }
+            var hmDest = hmNode.dest;
+            for (var jDest=0; jDest<hmDest.size(); jDest++) {
+                hmSignals.addSignal(sNode, sPulse, hmDest[jDest]);
+            }
+        }
+//        thc = thc.bigAdd(big(hc));
+//        tlc = tlc.bigAdd(big(lc));
+//        w("hc = " + toString(hc).resizeString(10, " ", false) + " lc = " + toString(lc).resizeString(10, " ", false));
+        if (bRxReceivedLow) { break; }
+    }
+//    w("thc = " + thc);
+//    w("tlc = " + tlc);
+//    w("total = " + bigMultiply(thc, tlc));
+}
+
+//game(false);
+game(true);
+
+
+//out.writeln(hexToInt("70c71"));

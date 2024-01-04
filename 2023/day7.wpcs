@@ -1,0 +1,77 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 7: Camel Cards ---
+
+var hmLines = [];
+
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+function char(sString, iPos) {
+    return sString.substring(iPos, iPos+1);
+}
+
+function determineScore(sHand) {
+    var hmUnique = [];
+    for (var j=0; j<5; j++) {
+        var card = sHand.char(j);
+        var c = hmUnique[card];
+        hmUnique[card] = (c == null ? 1 : c + 1);
+    }
+    var c = hmUnique.size();
+    if (c == 1) { return "6"; }       // Five of a kind
+    if (c == 4) { return "1"; }       // One pair
+    if (c == 5) { return "0"; }       // Five different cards
+    if (c == 2) {
+        return (hmUnique.containsValue(4) ? "5" : "4"); // Either full house (2 and 3 of same kind) or four of the same kind
+    }
+    return (hmUnique.containsValue(3) ? "3" : "2");     // Three different cards, check if one of them is 3, so two others are unique
+}
+
+function game(round2) {
+    var hmHands = [];
+    var hmHandBids = [];
+    for (var i=0;i<hmLines.size();i++) {
+        var sHand = hmLines[i].parseDelim(" ", 0).trim();
+        var iBid = toInteger(hmLines[i].parseDelim(" ", 1));
+        // Translate card, so we can sort them
+        sHand = sHand.replace("A", "Z");
+        sHand = sHand.replace("K", "Y");
+        sHand = sHand.replace("Q", "X");
+        sHand = sHand.replace("J", (round2 ? "*" : "W"));    // So that the Joker is counted/sorted as lowest
+        sHand = sHand.replace("T","V");
+        // Determine type of hand: four or five of ...
+        var sScore = determineScore(sHand);  // Determine as-is score
+        if (round2 && sHand.contains("*")) {
+            // Check if can get it higher replacing the joker with other card
+            var sCards = "123456789VXYZ";
+            for (var j=0;j<sCards.length();j++) {
+                var sJokerScore = determineScore(sHand.replace("*", sCards.char(j)));
+                if (sScore < sJokerScore) {
+                    sScore = sJokerScore;
+                }
+            }
+        }
+        sHand = sScore + sHand;
+        hmHandBids[sHand] = iBid;
+        hmHands.add(sHand);
+    }
+    hmHands = hmHands.sort();
+    var iResult = 0;
+    var iHands = hmHands.size();
+    for (var i=0; i<iHands; i++) {
+        iResult = iResult + (hmHandBids[hmHands[i]] * (i+1));
+    }
+    return iResult;
+}
+
+
+out.writeln("Round 1: " + game(false));
+out.writeln("Round 2: " + game(true));
+
+// As one-liner / 1KB solution...
+var l=[];forEachLine(in,s){l.add(s);}function C(s,i){return s.substring(i,i+1);}function E(h){var u=[];for(var j=0;j<5;j++){var d=h.C(j);var c=u[d];u[d]=(c==null?1:c+1);}var c=u.size();if(c==1){return "6";}if(c==4){return"1";}if(c==5){return"0";}if(c==2){return (u.containsValue(4)?"5":"4");}return (u.containsValue(3)?"3":"2");}function g(r){var H=[];var B=[];for(var i=0;i<l.size();i++){var h=l[i].parseDelim(" ",0).trim().replace("A","Z").replace("K","Y").replace("Q","X").replace("J",(r?"*":"W")).replace("T","V");var b=toInteger(l[i].parseDelim(" ",1));var s=E(h);if(r&&h.contains("*")){var a="123456789VXYZ";for(var j=0;j<a.length();j++){var b=E(h.replace("*",a.C(j)));if(s<b){s=b;}}}h=s+h;B[h]=b;H.add(h);}H=H.sort();var t=0;for(var i=0;i<H.size();i++){t=t+(B[H[i]]*(i+1));}out.writeln(t);}g(false);g(true);

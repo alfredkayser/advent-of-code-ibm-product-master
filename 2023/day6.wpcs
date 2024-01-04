@@ -1,0 +1,126 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 6: Wait For It ---
+
+var hmLines = [];
+
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+function charAt(sString, iPos) {
+    return sString.substring(iPos, iPos+1);
+}
+
+function parseLine(sLine) {
+    var hmResults = [];
+    var sNum = "";
+    var bInNum = false;
+    for (var i=0;i<sLine.length();i++) {
+        var sChar = sLine.charAt(i);
+        if (bInNum) {
+            if (sChar == " ") {
+                hmResults.add(sNum);
+                bInNum = false;
+            } else {
+                sNum = sNum + sChar;
+            }
+        } else if (sChar != " ") {
+            bInNum = true;
+            sNum = sChar;
+        }
+    }
+    if (bInNum) {
+        hmResults.add(sNum);
+    }
+    return hmResults;
+}
+
+function round1() {
+    var hmTimes = hmLines[0].parseDelim(":",1).parseLine();
+    var hmDists = hmLines[1].parseDelim(":",1).parseLine();
+//        out.writeln("hmTimes="+hmTimes);
+//        out.writeln("hmDists="+hmDists);
+
+    var iResult = 1;
+    for (var i=0; i<hmTimes.size(); i++) {
+        var iMaxTime = hmTimes[i].checkString("").checkInt(0);
+        if (iMaxTime == 0) { continue; }
+        var iCurDist = hmDists[i].checkString("").checkInt(0);
+//        out.writeln("iMaxTime="+iMaxTime);
+//        out.writeln("iCurDist="+iCurDist);
+        var iCnt = 0;
+        for (var j=0; j<iMaxTime; j++) {
+            var iDist = j * (iMaxTime - j);
+//            out.writeln("iDist="+iDist);
+            if (iDist > iCurDist) {
+                iCnt ++;
+            }
+        }
+        out.writeln(iCnt);
+        iResult = iResult * iCnt;
+    }
+    return iResult;
+}
+
+function maxInt(i1, i2) {
+    return (i1>i2 ? i1 : i2);
+}
+
+function compareBigInt(sA, sB) {
+    var iDigits = maxInt(sA.length(), sB.length());
+    sA = sA.resizeString(iDigits, "0", false);
+    sB = sB.resizeString(iDigits, "0", false);
+    if (sA == sB) { return 0; }
+    return (sA < sB ? -1 : 1);
+}
+
+function round2() {
+    var hmTimes = hmLines[0].parseDelim(":",1).parseLine();
+    var hmDists = hmLines[1].parseDelim(":",1).parseLine();
+//        out.writeln("hmTimes="+hmTimes);
+//        out.writeln("hmDists="+hmDists);
+
+    var sTotalTime = "";
+    var sTotalDist = "";
+    for (var i=0; i<hmTimes.size(); i++) {
+        sTotalTime = sTotalTime + hmTimes[i];
+        sTotalDist = sTotalDist + hmDists[i];
+    }
+    var iTotalTime = toInteger(sTotalTime);
+    var nTotalDist = sTotalDist.checkDouble(0.0);
+    out.writeln("iTotalTime="+iTotalTime);
+    out.writeln("nTotalDist="+nTotalDist);
+    var iCnt = 0;
+    var iMinTime = null;
+    var iMaxTime = null;
+    for (var j=0; j<iTotalTime; j++) {
+        // Result can be larger than int...
+        // Do bigint multiply (both sources are max int32)
+        var nDist = (1.0 * j) * (iTotalTime - j);
+        if (nDist > nTotalDist) {
+            iMinTime = j;
+            break;
+        }
+    }
+    for (var j=iTotalTime-1; j>=0; j--) {
+        // Result can be larger than int...
+        // Do bigint multiply (both sources are max int32)
+        var nDist = (1.0 * j) * (iTotalTime - j);
+        if (nDist > nTotalDist) {
+            iMaxTime = j;
+            break;
+        }
+    }
+out.writeln("iMinTime: " + toString(iMinTime));
+out.writeln("iMaxTime: " + toString(iMaxTime));
+    iCnt = iMaxTime - iMinTime + 1;
+    return iCnt;
+}
+
+out.writeln("Round 1: " + round1());
+
+out.writeln("Round 2: " + round2());

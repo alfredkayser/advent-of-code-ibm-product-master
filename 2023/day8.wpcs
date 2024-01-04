@@ -1,0 +1,82 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 7: Camel Cards ---
+
+var hmLines = [];
+var l;
+forEachLine(in,l){hmLines.add(l);}
+
+function w(s){out.writeln(s);}
+function char(s, i){return s.substring(i,i+1);}
+
+// BigInteger stuff
+var jcBI        = createJavaConstructor("java.math.BigInteger", "java.lang.String");
+var jmGCD       = createJavaMethod("java.math.BigInteger", "gcd", "java.math.BigInteger");
+var jmDivide    = createJavaMethod("java.math.BigInteger", "divide", "java.math.BigInteger");
+var jmMultiply  = createJavaMethod("java.math.BigInteger", "multiply", "java.math.BigInteger");
+function gcd(A,B)           {return A.runJavaMethod(jmGCD, B);}
+function multiply(A,B)      {return A.runJavaMethod(jmMultiply, B);}
+function divide(A,B)        {return A.runJavaMethod(jmDivide, B);}
+function toBigInteger(a)    {return jcBI.runJavaConstructor(a.checkString(""));}
+
+function lcm(a,b) { return a.multiply(b).divide(gcd(a, b)); }
+function lcmm(h) {
+    var a = toBigInteger(h[0]);
+    for (var i=1; i<h.size(); i++) {
+        a = a.lcm(toBigInteger(h[i]));
+    }
+    return a;
+}
+
+function game(round2) {
+    var iResult = 0;
+    var sIns = hmLines[0];
+    var hmIns = [];
+    for (var i=0; i<sIns.length(); i++) {
+        hmIns[i] = (sIns.char(i) == "L" ? 0 : 1);
+    }
+    var hmMap = [];
+    for (var i=2; i<hmLines.size(); i++) {
+        var l = hmLines[i].replace(" ","").replace("(","").replace(")","");
+        //AAA=BBB,CCC
+        hmMap[l.parseDelim("=", 0)] = l.parseDelim("=", 1).parseDelim(",");
+    }
+    var iIns = 0;
+    var iCount = hmIns.size();
+    if (round2) {
+        var hmPos = []; // Current positions
+        var hmEnd = [];
+        var p;var rl;
+        forEachHmElement(hmMap, p, rl) {
+            if (p.endsWith("A")) { hmPos.add(p); }
+            if (p.endsWith("Z")) { hmEnd[p] = true; }
+        }
+        var pc = hmPos.size();
+        var hmCounts = [];
+        for (var i=0; i<pc; i++) {
+            var p = hmPos[i];
+            var c = 0;
+            while (c < 1000000 && !p.endsWith("Z")) {
+                var rl = hmIns[iIns]; iIns++; if (iIns == iCount) { iIns = 0; }
+                p = hmMap[p][rl];
+                c ++;
+            }
+            hmCounts[i] = c;
+        }
+        return hmCounts.lcmm();
+    } else {
+        var sPos = "AAA";
+        while (iResult < 100000 && sPos != "ZZZ" && sPos != null) {
+            var rl = hmIns[iIns]; iIns++; if (iIns == iCount) { iIns = 0; }
+            sPos = hmMap[sPos][rl];
+            iResult ++;
+        }
+    }
+    return iResult;
+}
+
+
+w("Round 1: " + game(false));
+w("Round 2: " + game(true));

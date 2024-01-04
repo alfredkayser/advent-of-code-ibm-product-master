@@ -1,0 +1,375 @@
+//
+// Code of Advent 2023
+//
+
+//--- Day 5: If You Give A Seed A Fertilizer ---
+
+var hmLines = [];
+
+var sLine;
+forEachLine(in, sLine) {
+    hmLines.add(sLine);
+}
+
+function maxInt(i1, i2) {
+    return (i1>i2 ? i1 : i2);
+}
+
+function minInt(i1, i2) {
+    return (i1<i2 ? i1 : i2);
+}
+
+function charAt(sString, iPos) {
+    return sString.substring(iPos, iPos+1);
+}
+
+//---------------- BigInteger functions------------------------------------------------
+// Handling integers of unlimited length, by doing addition/substraction per 8 digits
+//-------------------------------------------------------------------------------------
+//
+// Returns the n-th chunk from the bigint string
+// @param string the (big) number as a string
+// @param chunk the number of the chunk of digits to get, counting from the end
+//
+//  012345678901234567890
+//  ^    ^       ^
+//  |    |       34567890 = chunk 0
+//  |    56789012 = chunk 1
+//  01234 = chunk 2
+//
+// @returns integer of the digit, 0 if outside string
+//
+function getChunkAt(string, chunk) {
+    if (chunk < 0) { return 0; }
+    // iPos = 0, gets last digit
+    // iPos = 1, gets digit before last
+    var end = string.length() - (chunk*8);
+    if (end <= 0) { return 0; }
+    var start = end - 8;
+    if (start < 0) { start = 0; }
+    return toInteger(string.substring(start, end));
+}
+
+function stripZeros(sSum) {
+    var bNeg = false;
+    if (sSum.startsWith("-")) {
+        sSum = sSum.substring(1);
+        bNeg = true;
+    }
+    // Remove zero's
+    while (sSum.length() > 1 && sSum.startsWith("0")) {
+        sSum = sSum.substring(1);
+    }
+    return (bNeg ? "-" + sSum: sSum);
+}
+
+function _addBigInt(sA, sB) {
+    var iDigits = maxInt(sA.length(), sB.length());
+    var iChunks = iDigits/8;
+    if (iChunks*8 < iDigits) { iChunks++; }
+    var sSum = "";
+    var iCarry = 0;
+    for (var i=0; i<iChunks; i++) {
+        var iS = sA.getChunkAt(i) + sB.getChunkAt(i) + iCarry;
+        if (iS >= 100000000) {
+            iS = iS - 100000000;
+            iCarry = 1;
+        } else {
+            iCarry = 0;
+        }
+        sSum = toString(iS).resizeString(8, "0", false) + sSum;
+    }
+    if (iCarry != 0) {
+        sSum = iCarry + sSum;
+    }
+    return stripZeros(sSum);
+}
+
+function test1(a, b, c) {
+    out.write("A=" +a + " B=" + b + ": ");
+    var r= _addBigInt(a,b);
+    out.writeln((r == c ? "OK" : "NOK: " + r + "!=" + c));
+}
+
+test1("123", "12", "135");
+test1("1000", "99", "1099");
+test1("100", "99", "199");
+test1("099", "100", "199");
+test1("321448984", "2147483647", "2468932631");
+test1("99999999", "1", "100000000");
+test1("99999999", "99999999", "199999998");
+test1("99999999", "12399999999", "12499999998");
+
+
+function _subBigNum(sA, sB) {
+    var iDigits = maxInt(sA.length(), sB.length());
+    var iChunks = iDigits/8;
+    if (iChunks*8 < iDigits) { iChunks++; }
+    var sSum = "";
+    var iCarry = 0;
+
+    for (var i=0; i<iChunks; i++) {
+        var iS = sA.getChunkAt(i) - sB.getChunkAt(i) - iCarry;
+        if (iS < 0) {
+            iS = iS + 100000000;
+            iCarry = 1;
+        } else {
+            iCarry = 0;
+        }
+        sSum = toString(iS).resizeString(8, "0", false) + sSum;
+    }
+    if (iCarry == 1) {
+        return "-"; // Underflow, report, and let caller solve it
+    }
+    return stripZeros(sSum);
+}
+
+function subBigNum(sA, sB) {
+    var sSum = _subBigNum(sA, sB);
+    if (sSum == "-") {
+        sSum = "-" + _subBigNum(sB, sA);
+    }
+    return sSum;
+}
+
+function addBigInt(sA, sB) {
+    if (sA.startsWith("-")) {
+        if (sB.startsWith("-")) {
+            // Add two negs, is adding two positives and negate result
+            return "-" + _addBigInt(sA.substring(1), sB.substring(1));
+        }
+        // substract negative number from positive
+        return subBigNum(sB, sA.substring(1));
+    }
+    if (sB.startsWith("-")) {
+        // substract negative number from positive
+        return subBigNum(sA, sB.substring(1));
+    }
+    return _addBigInt(sA,sB);
+}
+
+function test2(a, b, c) {
+    out.write("A=" +a + " B=" + b + ": ");
+    var r= subBigNum(a,b);
+    out.writeln((r == c ? "OK" : "NOK: " + r + "!=" + c));
+}
+
+test2("123", "12", "111");
+test2("1000", "-99", "1099");
+test2("-100", "99", "-199");
+test2("-099", "100", "-199");
+test2("-099", "-100", "1");
+test2("-321448984", "2147483647", "-2426034663");
+test2("99999999", "1", "99999998");
+test2("99999999", "99999999", "0");
+test2("99999999", "12399999999", "-12300000000");
+
+
+
+function round1() {
+    var hmTransformations = [];
+    var hmTransformation = [];
+    var hmSeeds = [];
+    var hmParts = hmLines[0].replace("seeds: ","").parseDelim(" ");
+    for (var j=0; j<hmParts.size(); j++) {
+        hmSeeds[j] = hmParts[j].trim();
+    }
+
+    var bInMap = false;
+    for (var i=2; i<hmLines.size(); i++) {
+        var sLine = hmLines[i];
+        if (sLine == "") {
+            bInMap = false;
+        }
+        else if (bInMap) {
+            var hmParts = sLine.parseDelim(" ");
+            var hmMapping = [];
+            for (var j=0; j<hmParts.size(); j++) {
+                hmMapping[j] = hmParts[j].trim();
+            }
+            hmTransformation.add(hmMapping);
+        } else {
+            // New map
+            hmTransformation = [];
+            hmTransformations.add(hmTransformation);
+            bInMap = true;
+        }
+    }
+    // Map the seeds
+    var sResult = null;
+    for (var j=0; j<hmSeeds.size(); j++) {
+        var sPos = hmSeeds[j];
+        out.writeln("Seed: " + sPos);
+        for (var i=0; i<hmTransformations.size(); i++) {
+            var hmTransformation = hmTransformations[i];
+            for (var k=0; k<hmTransformation.size(); k++) {
+                var hmMapping = hmTransformation[k];
+                var sDestStart = hmMapping[0];
+                var sSourceStart = hmMapping[1];
+                var sRangeLen = hmMapping[2];
+                var sOffset = subBigNum(sPos, sSourceStart);
+                if (!sOffset.startsWith("-") && !subBigNum(sRangeLen,sOffset).startsWith("-")) {
+                    sPos = addBigInt(sDestStart, sOffset);
+                    break;
+                }
+            }
+        }
+        out.writeln("Location: " + sPos);
+        if (sResult == null || subBigNum(sPos, sResult).startsWith("-")) {
+            sResult = sPos;
+        }
+    }
+    return sResult;
+}
+
+function compareBigInt(sA, sB) {
+    var iDigits = maxInt(sA.length(), sB.length());
+    sA = sA.resizeString(iDigits, "0", false);
+    sB = sB.resizeString(iDigits, "0", false);
+    if (sA == sB) { return 0; }
+    return (sA < sB ? -1 : 1);
+}
+
+function addPair(hm, a, b) { hm.add(a); hm.add(b); return hm; }
+
+function round2() {
+    var hmTransformations = [];
+    var hmTransformation = [];
+    var hmSeeds = [];
+    var hmParts = hmLines[0].replace("seeds: ","").parseDelim(" ");
+    for (var j=0; j<hmParts.size(); j++) {
+        hmSeeds[j] = hmParts[j].trim();
+    }
+
+    var bInMap = false;
+    for (var i=2; i<hmLines.size(); i++) {
+        var sLine = hmLines[i];
+        if (sLine == "") {
+            bInMap = false;
+        }
+        else if (bInMap) {
+            var hmParts = sLine.parseDelim(" ");
+            var hmMapping = [];
+            var sDestStart   = hmParts[0].trim();
+            var sSourceStart = hmParts[1].trim();
+            var sSourceLen   = hmParts[2].trim();
+            hmMapping[0] = subBigNum(sDestStart, sSourceStart);  // dest=12, source=10, offset = 2 --> amount to shift the range;
+            hmMapping[1] = sSourceStart;
+            hmMapping[2] = addBigInt(sSourceStart, sSourceLen);
+            hmTransformation.add(hmMapping);
+        } else {
+            // New map
+            hmTransformation = [];
+            hmTransformations.add(hmTransformation);
+            bInMap = true;
+        }
+    }
+    // Map the seeds
+    var sResult = null;
+    for (var j=0; j<hmSeeds.size(); j = j+2) {
+        var sSeedStart = hmSeeds[j];
+        var sSeedLen   = hmSeeds[j+1];
+        var sSeedEnd   = addBigInt(sSeedStart, sSeedLen);
+        // For each transformation. Start with the seed range
+        var hmRanges = [];
+        hmRanges.add(sSeedStart);
+        hmRanges.add(sSeedEnd);
+        out.writeln("Seed: " + hmRanges);
+        for (var i=0; i<hmTransformations.size(); i++) {
+            var hmTransformation = hmTransformations[i];
+            var hmTransformedRanges = [];
+            for (var k=0; k<hmTransformation.size(); k++) {
+                // Seed-to-water, water-to-xxx, xxx-to-yyy
+                var hmMapping    = hmTransformation[k];
+                var sOffset      = hmMapping[0];
+                var sSourceStart = hmMapping[1];
+                var sSourceEnd   = hmMapping[2];
+                for (var l=0; l<hmRanges.size(); l = l+2) {
+                    // Determine overlap with the current ranges, and transform the overlapping part
+                    var sRangeStart = hmRanges[l];
+                    if (sRangeStart == null) { continue; }
+                    var sRangeEnd   = hmRanges[l+1];
+                    if (compareBigInt(sSourceEnd, sRangeStart) <= 0    // source if before this range, no action
+                      || compareBigInt(sSourceStart, sRangeEnd) >= 0) {// Overlap on right side
+                        // No transformation, keep range as-is
+                    }
+                    else if (sSourceEnd == sRangeEnd) {
+                        // Same end
+                        if (compareBigInt(sSourceStart, sRangeStart) > 0) {
+                            // Split into part before source and part overlapping
+                            hmRanges[l] = sRangeStart;
+                            hmRanges[l+1] = sSourceStart;
+                            hmTransformedRanges.addPair(addBigInt(sSourceStart, sOffset), addBigInt(sRangeEnd, sOffset));
+                        } else {
+                            // Full overlap, transform everything of the range
+                            hmRanges[l] = null;
+                            hmRanges[l+1] = null;
+                            hmTransformedRanges.addPair(addBigInt(sRangeStart, sOffset), addBigInt(sRangeEnd, sOffset));
+                        }
+                    }
+                    else if (compareBigInt(sSourceEnd, sRangeEnd) < 0) {
+                        // Source end is before range end
+                        if (compareBigInt(sSourceStart, sRangeStart) > 0) {
+                            // Split into three parts before source and part overlapping and part after source
+                            hmRanges[l] = sRangeStart;
+                            hmRanges[l+1] = sSourceStart;
+                            hmTransformedRanges.addPair(addBigInt(sSourceStart, sOffset), addBigInt(sSourceEnd, sOffset));
+                            hmRanges.addPair(sSourceEnd, sRangeEnd);
+                        } else {
+                            // Source begins before or equal to start of range, transform left part, and keep right part
+                            hmTransformedRanges.addPair(addBigInt(sRangeStart, sOffset), addBigInt(sSourceEnd, sOffset));
+                            hmRanges[l] = sSourceEnd;
+                            hmRanges[l+1] = sRangeEnd;
+                        }
+                    }
+                    else {
+                        // Source end is past range, check right part
+                        if (compareBigInt(sSourceStart, sRangeStart) > 0) {
+                            hmRanges[l] = sRangeStart;
+                            hmRanges[l+1] = sSourceStart;
+                            hmTransformedRanges.addPair(addBigInt(sSourceStart, sOffset), addBigInt(sRangeEnd, sOffset));
+                        } else {
+                            // Source start is before range start, so full overlap
+                            hmRanges[l] = null;
+                            hmRanges[l+1] = null;
+                            hmTransformedRanges.addPair(addBigInt(sRangeStart, sOffset), addBigInt(sRangeEnd, sOffset));
+                        }
+                    }
+                }
+            }
+            for (var l=0; l<hmTransformedRanges.size(); l = l+2) {
+                hmRanges.addPair(hmTransformedRanges[l],hmTransformedRanges[l+1]);
+            }
+        }
+        // Determine which seed location is the lowest for this seed
+        //out.writeln("hmRanges: " + hmRanges);
+        var sLowest = null;
+        var iRanges = hmRanges.size();
+        for (var l=0; l<iRanges; l = l+2) {
+            if (sLowest == null || (hmRanges[l] != null && compareBigInt(hmRanges[l], sLowest) < 0)) {
+                sLowest = hmRanges[l];
+            }
+        }
+        out.writeln("Lowest for this seed: " + sLowest);
+        if (sResult == null || subBigNum(sLowest, sResult).startsWith("-")) {
+            sResult = sLowest;
+        }
+    }
+    return sResult;
+}
+
+
+out.writeln("Round 1: " + round1());
+
+// Round 2 needs different strategy...
+// Instead of testing per seed, whole seed ranges needs to be tested and converted
+// Seed range [a - a+size] map from [source - source+rangelen] to [dest - dest+rangelen], etc...
+// Each mapping a range using a mapping results in a new mapping: 
+//  1. No overlap: original range
+//  2. Overlap: the part that overlaps replaced by a new range
+//      a.  overlap begin part: new range + range not overlapped
+//      b.  overlap middle part: orig range + transformed range + orig range
+//      c.  overlap end part: orig range + transformed range
+//
+
+out.writeln("Round 2: " + round2());
